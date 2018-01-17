@@ -21,8 +21,8 @@
 
 double t = 0;
 double tFinal = 0;
-bool adaptiveTimeStepCheck = false;
-double defaultTimeStepSize = 0.001;
+bool adaptiveTimeStepCheck = true;
+double defaultTimeStepSize = 0.1;
 double smallestDiffCoefficent = 100;
 int NumberOfBodies = 0;
 
@@ -370,16 +370,27 @@ double updateTimeStep(double beforeTS, Body a, Body b, double distance, double* 
   if (timestep <= 0.001){
     // return it as is.
   } else {
-    
-    double displacement = 0;
-    timestep = timestep/2;
-  }
-
+    if (distance > 0){
+      double velocity = sqrt(
+        (a.v[0] * a.v[0]) + 
+        (a.v[1] * a.v[1]) + 
+        (a.v[2] * a.v[2])
+      );
+      double oForce = sqrt(
+        (force[0] * force[0]) +
+        (force[1] * force[1]) +
+        (force[2] * force[2])
+      );
+      // std::cerr << "Velocity: " << velocity << ", Ting: " << abs(timestep * oForce / a.mass) << std::endl;
+      while ((velocity > 0) && (abs(timestep * oForce / a.mass) > 0.01)){
+        timestep = timestep / 2;
+      }
+    }
     // while (v[0][0] > 0 and abs(dt * force[0] / mass[0]) > eps):
     // dt = dt / 2
       // check that the velocity of an object is greater than 0
       // check that the absolute value of (time * force[object] / mass[object] > eps)
-
+  }
   return timestep;
 }
 
