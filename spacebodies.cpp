@@ -22,7 +22,7 @@
 double t = 0;
 double tFinal = 0;
 bool adaptiveTimeStepCheck = true;
-double defaultTimeStepSize = 0.1;
+double defaultTimeStepSize = 1;
 double smallestDiffCoefficent = 100;
 int NumberOfBodies = 0;
 
@@ -383,6 +383,7 @@ double updateTimeStep(double beforeTS, Body a, Body b, double distance, double* 
       );
       // std::cerr << "Velocity: " << velocity << ", Ting: " << abs(timestep * oForce / a.mass) << std::endl;
       while ((velocity > 0) && (abs(timestep * oForce / a.mass) > 0.01)){
+        std::cerr << "Halving timestep" << std::endl;
         timestep = timestep / 2;
       }
     }
@@ -456,7 +457,7 @@ void updateBodies(Body* bodies) {
   // if theres collisions, then make new body and remove the collided bodies
   checkCollision(bodies);
   // increment the current time with the time step.
-  t += defaultTimeStepSize;
+  t += timestep;
   // std::cout << "\x1B[2J\x1B[H";
 }
 
