@@ -239,7 +239,11 @@ Body joinBodies(Body x, Body y){
   Body z;
   z.mass = x.mass + y.mass;
   for (int i; i < 3; i++){
+    // get position of one of the colluded bodies
     z.x[i] = x.x[i];
+
+     std::cerr << "v" << x.v[i] << ", " << y.v[i] << " : " <<  x.v[i] - y.v[i] << std::endl;
+    // calculate velocity of new item.
     z.v[i] = (x.v[i] - y.v[i]);
   }
   return z;
@@ -329,7 +333,7 @@ void checkCollision(Body* b){
 
 // DONE
 int calculateNumberOfBodies(int argc){
-  // this represents the number of bodies in space.
+  // this represents the initial number of bodies in space.
   return (argc-2) / 7;
 }
 
@@ -359,17 +363,14 @@ void setUp(int argc, char** argv, Body* b) {
   std::cout << "created setup with " << NumberOfBodies << " bodies" << std::endl;
 }
 
-
 // TODO
 double updateTimeStep(double beforeTS, Body a, Body b, double distance, double* force){
   // the template code uses a fixed time step. Augment the code such that an appropriate time step size is chosen and no collisions are left out, i.e. bodies do not fly through each other.
 
   double timestep = beforeTS;
-  
+  // std::cerr << "old timestep:" << timestep << std::endl;
   // check if that timestep is tiny.
-  if (timestep <= 0.001){
-    // return it as is.
-  } else {
+  if (timestep >= 1e-8){
     if (distance > 0){
       double velocity = sqrt(
         (a.v[0] * a.v[0]) + 
@@ -382,27 +383,29 @@ double updateTimeStep(double beforeTS, Body a, Body b, double distance, double* 
         (force[2] * force[2])
       );
       // std::cerr << "Velocity: " << velocity << ", Ting: " << abs(timestep * oForce / a.mass) << std::endl;
-      while ((velocity > 0) && (abs(timestep * oForce / a.mass) > 0.01)){
-        std::cerr << "Halving timestep" << std::endl;
+      // while ((velocity > 0) && (abs(timestep * oForce / a.mass) > 0.0001)){
+      //   // std::cerr << "Halving timestep" << std::endl;
+      //   // std::cerr << "Velocity: " << velocity << ", Ting: " << abs(timestep * oForce / a.mass) << std::endl;
+      //   timestep = timestep / 2;
+      // }
+      while ((velocity * timestep) > distance){
         timestep = timestep / 2;
+        // std::cerr << "velo*time:   " << velocity * timestep << std::endl;
+        // std::cerr << "new timestep:" << timestep << std::endl;
       }
     }
-    // while (v[0][0] > 0 and abs(dt * force[0] / mass[0]) > eps):
-    // dt = dt / 2
-      // check that the velocity of an object is greater than 0
-      // check that the absolute value of (time * force[object] / mass[object] > eps)
   }
   return timestep;
 }
 
+// literally prints body statistics.
 void printBodyMessage(Body a, int j){
-  printf("Body %5d: %7.3f  %7.3f  %7.3f  %7.3f  %7.3f  %7.3f  %7.3f \n", j, a.x[0], a.x[1], a.x[2], a.v[0], a.v[1], a.v[2], a.mass);
+  printf("Body %5d: %7.8f  %7.8f  %7.8f  %7.3f  %7.3f  %7.3f  %7.3f \n", j, a.x[0], a.x[1], a.x[2], a.v[0], a.v[1], a.v[2], a.mass);
 }
 
 // function that updates the positions of the particles in space
 void updateBodies(Body* bodies) {
-  printf ("Time: %4.5f \n", t);
-  // initiate the base timestep size
+  printf ("Time: %4.8f \n", t);
   double timestep = defaultTimeStepSize;
 
   for (int j=0; j<NumberOfBodies; j++) {
@@ -433,8 +436,8 @@ void updateBodies(Body* bodies) {
         force[1] += (bodies[i].x[1]-bodies[j].x[1]) * combinedMass / distance / distance / distance;
         force[2] += (bodies[i].x[2]-bodies[j].x[2]) * combinedMass / distance / distance / distance;
 
-        // here we check whether we need to update the time stepping.
         if (adaptiveTimeStepCheck == true){
+          // update timestep if needed
           timestep = updateTimeStep(timestep, bodies[i], bodies[j], distance, force);
         }
       }
@@ -442,8 +445,8 @@ void updateBodies(Body* bodies) {
     // once we've also calculated the timestep
     // update position and velocity of body
     for (int k=0; k<3; k++){
-      bodies[j].nx[k] = bodies[j].x[k] + (defaultTimeStepSize * bodies[j].v[k]);
-      bodies[j].nv[k] = bodies[j].v[k] + (defaultTimeStepSize * force[k] / bodies[j].mass);
+      bodies[j].nx[k] = bodies[j].x[k] + (timestep * bodies[j].v[k]);
+      bodies[j].nv[k] = bodies[j].v[k] + (timestep * (force[k] / bodies[j].mass));
     }
     bodies[j].nm = bodies[j].mass;
   }
