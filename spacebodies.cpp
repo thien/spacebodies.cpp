@@ -361,26 +361,41 @@ void setUp(int argc, char** argv, Body* b) {
 
 
 // TODO
-double updateTimeStep(){
+double updateTimeStep(double beforeTS, Body a, Body b, double distance, double* force){
   // the template code uses a fixed time step. Augment the code such that an appropriate time step size is chosen and no collisions are left out, i.e. bodies do not fly through each other.
-  if (adaptiveTimeStepCheck == true){
+
+  double timestep = beforeTS;
+  
+  // check if that timestep is tiny.
+  if (timestep <= 0.001){
+    // return it as is.
+  } else {
+    
+    double displacement = 0;
+    timestep = timestep/2;
+  }
+
     // while (v[0][0] > 0 and abs(dt * force[0] / mass[0]) > eps):
     // dt = dt / 2
       // check that the velocity of an object is greater than 0
       // check that the absolute value of (time * force[object] / mass[object] > eps)
 
-  }
-  return defaultTimeStepSize;
+  return timestep;
 }
 
+void printBodyMessage(Body a, int j){
+  printf("Body %5d: %7.3f  %7.3f  %7.3f  %7.3f  %7.3f  %7.3f  %7.3f \n", j, a.x[0], a.x[1], a.x[2], a.v[0], a.v[1], a.v[2], a.mass);
+}
 
 // function that updates the positions of the particles in space
 void updateBodies(Body* bodies) {
   printf ("Time: %4.5f \n", t);
+  // initiate the base timestep size
+  double timestep = defaultTimeStepSize;
 
   for (int j=0; j<NumberOfBodies; j++) {
     // now we can print the position of the space body
-    printf("Body %5d: %7.3f  %7.3f  %7.3f  %7.3f  %7.3f  %7.3f  %7.3f \n", j, bodies[j].x[0], bodies[j].x[1], bodies[j].x[2], bodies[j].v[0], bodies[j].v[1], bodies[j].v[2], bodies[j].mass);
+    printBodyMessage(bodies[j], j);
 
     // create force variable for the object (has 3 dimensions for x,y,z)
     double force[3];
@@ -392,7 +407,7 @@ void updateBodies(Body* bodies) {
       // make sure it doesn't interact with itself.
       if (i != j){
         // calculate distance
-        double dist = sqrt(
+        double distance = sqrt(
           (bodies[j].x[0]-bodies[i].x[0]) * (bodies[j].x[0]-bodies[i].x[0]) +
           (bodies[j].x[1]-bodies[i].x[1]) * (bodies[j].x[1]-bodies[i].x[1]) +
           (bodies[j].x[2]-bodies[i].x[2]) * (bodies[j].x[2]-bodies[i].x[2])
@@ -400,13 +415,16 @@ void updateBodies(Body* bodies) {
         // calculate combined mass
         double combinedMass = bodies[i].mass * bodies[j].mass;
         // update force values (for x,y,z)
-        force[0] += (bodies[i].x[0]-bodies[j].x[1]) * combinedMass / dist / dist / dist;
-        force[1] += (bodies[i].x[1]-bodies[j].x[1]) * combinedMass / dist / dist / dist;
-        force[2] += (bodies[i].x[2]-bodies[j].x[2]) * combinedMass / dist / dist / dist;
+
+        // don't even bother trying to make this in a loop.
+        force[0] += (bodies[i].x[0]-bodies[j].x[0]) * combinedMass / distance / distance / distance;
+        force[1] += (bodies[i].x[1]-bodies[j].x[1]) * combinedMass / distance / distance / distance;
+        force[2] += (bodies[i].x[2]-bodies[j].x[2]) * combinedMass / distance / distance / distance;
 
         // here we check whether we need to update the time stepping.
-        //  while (v[0][0] > 0 and abs(dt * force[0] / mass[0]) > eps):
-        // if (bodies[i].v)
+        if (adaptiveTimeStepCheck == true){
+          timestep = updateTimeStep(timestep, bodies[i], bodies[j], distance, force);
+        }
       }
     }
     // once we've also calculated the timestep
