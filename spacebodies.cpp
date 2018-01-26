@@ -31,7 +31,7 @@ int NumberOfBodies = 0;
 // Body Class; It'll be useful for when I need to make adjustments.
 
 class Body {
-  
+
   public:
     double x[3];   // displacement of body
     double v[3];   // velocity of body
@@ -39,7 +39,7 @@ class Body {
     double nx[3];  // future displacement of body
     double nv[3];  // future velocity of body
     double nm;   // future body mass
-    
+
     void assignNewValues(){
       // assigns future values to be current values.
       for (int i = 0; i < 3; i++) {
@@ -85,7 +85,6 @@ class myFloat {
     }
 };
 
-
 // ---------------------------
 
 // Helper Functions (Because they're not included in C++)
@@ -93,7 +92,7 @@ class myFloat {
 // Binary search for integer in list of integers.
 int BinarySearch(int* arr, int n, int search){
   int first, last, middle, location;
-  // default location value to -1   
+  // default location value to -1
   location = -1;
   // init holder values
   first = 0;
@@ -151,12 +150,12 @@ void removeObjectsFromArray(){
 
 // Taylor Series (currently Sine as example)
 // convert to radians to degree
-double toRadians(double angdeg){                                       
+double toRadians(double angdeg){
   //x is in radians
   const double PI = 3.14159265358979323846;
   return angdeg / 180.0 * PI;
 }
-//factorial function 
+//factorial function
 double fact(double x){
   // calculate factorial for denominator
   if (x==0 || x==1) {
@@ -183,7 +182,7 @@ void runSin(){
 
 // ---------------------------
 /*
- * Paraview Functions 
+ * Paraview Functions
  * The file format is documented at http://www.vtk.org/wp-content/uploads/2015/04/file-formats.pdf
  */
 
@@ -229,7 +228,7 @@ void closeParaviewVideoFile() {
             << "</VTKFile>" << std::endl;
 }
 
-// ---------------------------
+// -------------------------------------------
 
 // DONE
 Body joinBodies(Body x, Body y){
@@ -250,81 +249,113 @@ Body joinBodies(Body x, Body y){
 }
 
 // DONE (NEEDS TESTING)
-void checkCollision(Body* b){
-  // https://stackoverflow.com/questions/34820275/count-how-many-times-elements-in-an-array-are-repeated#34834823
-  
+void checkCollision(Body b[]){
+  // create space so we can find out which bodies are colliding with each other
   int positions[NumberOfBodies][2];
-  int incrementer = 0;
+  int collisionPairCount = 0;
+
+  // std::cerr << "Finding Collisions.." << std::endl;
 
   // find all possible collisions between particles.
   for (int i = 0; i < NumberOfBodies; i++){
     for (int j = 0; j < i; j++){
-      // don't calculate distance from itself to itself.
-      if (i != j){
+      if (i != j){ // don't calculate distance from itself to itself.
         double pos = sqrt(
           (b[j].x[0]-b[i].x[0]) * (b[j].x[0]-b[i].x[0]) +
           (b[j].x[1]-b[i].x[1]) * (b[j].x[1]-b[i].x[1]) +
           (b[j].x[2]-b[i].x[2]) * (b[j].x[2]-b[i].x[2])
         );
-        // Collision means the bodies are closer than 1e-8. 
         if (pos <= 1e-8){
-          positions[incrementer][0] = i;
-          positions[incrementer][1] = j;
-          incrementer++;
+          // Collision means the bodies are closer than 1e-8.
+          positions[collisionPairCount][0] = i;
+          positions[collisionPairCount][1] = j;
+          collisionPairCount++;
         }
       }
     }
   }
 
-  int discard[incrementer*2];
-  int discardInc = 0;
-  Body generatedBodies[incrementer];
+  // This is the new size of bodies.
+  int newBodyCount = NumberOfBodies - collisionPairCount;
 
-  // handle collisions between bodies and generate new body out of them.
-  if (incrementer > 0){
-    for (int i = 0; i < incrementer; i++){
-      // add collided bodies in discard array
-      if (ItemInArray(discard, incrementer*2, positions[i][0])){
-        discard[discardInc] = positions[i][0];
-        discardInc++;
-      }
-      if (ItemInArray(discard, incrementer*2, positions[i][1])){
-        discard[discardInc] = positions[i][1];
-        discardInc++;
-      }
+  // std::cerr << "Reducing The Number of Bodies to " << newBodyCount << std::endl;
 
-      // make new body
-      generatedBodies[i] = joinBodies(b[positions[i][0]], b[positions[i][1]]);
+  while (collisionPairCount > 0){
+    // std::cerr <<collisionPairCount << std::endl;
+    // out of the two items, which one is the smallest one?
+    int u = positions[collisionPairCount-1][0];
+    int v = positions[collisionPairCount-1][1];
+
+    if (positions[collisionPairCount-1][0] < positions[collisionPairCount-1][1]){
+      u = positions[collisionPairCount-1][0];
+      v = positions[collisionPairCount-1][1];
     }
+    // std::cerr << "Creating merged body.." << std::endl;
+    // std::cerr << v << std::endl;
+    // replace body at smaller index with the colluded bodies.
+    b[u] = joinBodies(b[u], b[v]);
+    // swap higher index with the last item in the list
+    b[v] = b[NumberOfBodies-1];
+    // null the last item in the list to reduce size.
+    collisionPairCount--;
   }
 
-  
-  int newNumberOfBodies = NumberOfBodies - discardInc + incrementer;
+  // std::cerr << "Finished collision handler" << std::endl;
 
-  // make new array of bodies.
-  Body newBodies[newNumberOfBodies];
+  NumberOfBodies = newBodyCount;
 
-  int i = 0;
-  int c = 0;
-  // add the current bodies to new list of bodies
-  while(c < NumberOfBodies){
-    bool badi = ItemInArray(discard, incrementer*2, i);
-    if (badi == false){
-      // add it to new list of bodies.
-      newBodies[i] = b[c];
-      i++;
-    }
-    c++;
-  }
+  // int discard[collisionPairCount*2];
+  // int discardInc = 0;
+  // Body generatedBodies[collisionPairCount];
+  //
+  // // handle collisions between bodies and generate new body out of them.
+  // if (collisionPairCount > 0){
+  //   for (int i = 0; i < collisionPairCount; i++){
+  //     // add collided bodies in discard array
+  //     if (ItemInArray(discard, collisionPairCount*2, positions[i][0])){
+  //       discard[discardInc] = positions[i][0];
+  //       discardInc++;
+  //     }
+  //     if (ItemInArray(discard, collisionPairCount*2, positions[i][1])){
+  //       discard[discardInc] = positions[i][1];
+  //       discardInc++;
+  //     }
+  //
+  //     // make new body
+  //     generatedBodies[i] = joinBodies(b[positions[i][0]], b[positions[i][1]]);
+  //   }
+  // }
+  //
+  //
+  // int newBodyCount = NumberOfBodies - discardInc + collisionPairCount;
+  //
+  // // make new array of bodies.
+  // Body newBodies[newBodyCount];
+  //
+  // int i = 0;
+  // int c = 0;
+  // // add the current bodies to new list of bodies
+  // while(c < NumberOfBodies){
+  //   bool badi = ItemInArray(discard, collisionPairCount*2, i);
+  //   if (badi == false){
+  //     // add it to new list of bodies.
+  //     newBodies[i] = b[c];
+  //     i++;
+  //   }
+  //   c++;
+  // }
+  //
+  // // add the newly formed bodies to list.
+  // for (int k = 0; k < collisionPairCount; k++){
+  //   newBodies[i + k] = generatedBodies[k];
+  // }
+  //
+  // // set current body pointer to the new bodies pointer.
+  // // set new number of bodies
+  // NumberOfBodies = newBodyCount;
 
-  // add the newly formed bodies to list.
-  for (int k = 0; k < incrementer; k++){
-    newBodies[i + k] = generatedBodies[k];
-  }
-
-  // set current body pointer to the new bodies pointer.
-  // set new number of bodies
-  NumberOfBodies = newNumberOfBodies;
+  // return newBodies;
+  // return newBodyCount;
 }
 
 // -------------------------------------------
@@ -340,7 +371,7 @@ int calculateNumberOfBodies(int argc){
 // DONE
 void setUp(int argc, char** argv, Body* b) {
   int readArgument = 1;
-  // Interprets a floating point value in a string str 
+  // Interprets a floating point value in a string str
   tFinal = std::stof(argv[readArgument]); readArgument++;
   for (int i=0; i<NumberOfBodies; i++) {
     // get position values
@@ -373,8 +404,8 @@ double updateTimeStep(double beforeTS, Body a, Body b, double distance, double* 
   if (timestep >= 1e-8){
     if (distance > 0){
       double velocity = sqrt(
-        (a.v[0] * a.v[0]) + 
-        (a.v[1] * a.v[1]) + 
+        (a.v[0] * a.v[0]) +
+        (a.v[1] * a.v[1]) +
         (a.v[2] * a.v[2])
       );
       double oForce = sqrt(
@@ -405,7 +436,8 @@ void printBodyMessage(Body a, int j){
 
 // function that updates the positions of the particles in space
 void updateBodies(Body* bodies) {
-  printf ("Time: %4.8f \n", t);
+  printf("\n\n");
+  printf ("Time: %4.8f, NumberOfBodies: %1.0d \n", t, NumberOfBodies);
   double timestep = defaultTimeStepSize;
 
   for (int j=0; j<NumberOfBodies; j++) {
@@ -502,16 +534,16 @@ int performSpaceBodies(Body* bodies){
 }
 
 // -------------------------------------------
-
 // Generation of Space Bodies
+// -------------------------------------------
 
 // Generates a random set of bodies.
 void generateRandomBodies(Body* b){
 
-  // I dont understand why so many people upvoted this answer. It is mathematically incorrect. RAND_MAX is a very small number (typically 2^16). That means that from 23 bits of the floating point you make only 15 random. The others will be probably zero. You will indeed get random numbers in uniform distribution but of low precision. For example your random generator can generate 0.00001 and 0.00002 but cannot generate 0.000017. So you have a uniform distribution but of low precision (256 times less precision than the actual floating point). – DanielHsH Aug 14 '14 at 8:25 
+  // I dont understand why so many people upvoted this answer. It is mathematically incorrect. RAND_MAX is a very small number (typically 2^16). That means that from 23 bits of the floating point you make only 15 random. The others will be probably zero. You will indeed get random numbers in uniform distribution but of low precision. For example your random generator can generate 0.00001 and 0.00002 but cannot generate 0.000017. So you have a uniform distribution but of low precision (256 times less precision than the actual floating point). – DanielHsH Aug 14 '14 at 8:25
 
   float maxFloat = 1.0;
-  
+
   for (int i = 0; i < NumberOfBodies; i++){
     float random_value[7];
     for(int j = 0; j < 7; j++){

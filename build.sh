@@ -3,7 +3,7 @@ if [ ! -d build ]; then
   mkdir -p build
 fi
 # compile spacebodies code
-g++ -O3 --std=c++11 spacebodies.cpp -o build/spacebodies 
+g++ -O3 --std=c++11 spacebodies.cpp -o build/spacebodies
 
 # run spacebodies; note that it comes in the form of px py pz vx vy vz m
 
