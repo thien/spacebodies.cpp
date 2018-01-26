@@ -85,66 +85,6 @@ class myFloat {
     }
 };
 
-// ---------------------------
-
-// Helper Functions (Because they're not included in C++)
-
-// Binary search for integer in list of integers.
-int BinarySearch(int* arr, int n, int search){
-  int first, last, middle, location;
-  // default location value to -1
-  location = -1;
-  // init holder values
-  first = 0;
-  last = n-1;
-  middle = (first+last)/2;
-
-  while (first <= last){
-    if(arr[middle] < search){
-      first = middle + 1;
-    }
-    else if(arr[middle] == search){
-      // we found the location
-      location = middle + 1;
-      break;
-    }
-    else {
-      last = middle - 1;
-    }
-    middle = (first + last)/2;
-  }
-  if(first > last){
-    // not found.
-  }
-  return location;
-
-  // Example runtime:
-    // int arr[50];//init array size
-    // int n = 20; // refers to the number of items in the array
-    // for (int i=0; i<n; i++){
-    //     arr[i] = i*2;
-    // }
-    // int search = 4; //search for this value
-    // int k = BinarySearch(arr, n, search);
-    // printf("%10d", k);
-}
-
-// Boolean model of Binary Search
-bool ItemInArray(int* arr, int n, int search){
-  if (BinarySearch(arr,n,search) != -1){
-    return false;
-  } else {
-    return true;
-  }
-}
-
-// TODO
-void removeObjectsFromArray(){
-  // makes new arrays for mass, x, and v
-  // copy pointers from previous mass,x,v
-  // remove pointers that need to be removed
-  // add new pointer of object.
-}
 
 // ---------------------------
 
@@ -282,7 +222,7 @@ void checkCollision(Body b[]){
 
   while (collisionPairCount > 0){
     // std::cerr <<collisionPairCount << std::endl;
-    // out of the two items, which one is the smallest one?
+    // out of the two items, which one is the smallest one? (doesn't matter rly)
     int u = positions[collisionPairCount-1][0];
     int v = positions[collisionPairCount-1][1];
 
@@ -290,8 +230,7 @@ void checkCollision(Body b[]){
       u = positions[collisionPairCount-1][0];
       v = positions[collisionPairCount-1][1];
     }
-    // std::cerr << "Creating merged body.." << std::endl;
-    // std::cerr << v << std::endl;
+
     // replace body at smaller index with the colluded bodies.
     b[u] = joinBodies(b[u], b[v]);
     // swap higher index with the last item in the list
@@ -300,62 +239,8 @@ void checkCollision(Body b[]){
     collisionPairCount--;
   }
 
-  // std::cerr << "Finished collision handler" << std::endl;
-
+  // update the number of bodies cus you just killed some lol
   NumberOfBodies = newBodyCount;
-
-  // int discard[collisionPairCount*2];
-  // int discardInc = 0;
-  // Body generatedBodies[collisionPairCount];
-  //
-  // // handle collisions between bodies and generate new body out of them.
-  // if (collisionPairCount > 0){
-  //   for (int i = 0; i < collisionPairCount; i++){
-  //     // add collided bodies in discard array
-  //     if (ItemInArray(discard, collisionPairCount*2, positions[i][0])){
-  //       discard[discardInc] = positions[i][0];
-  //       discardInc++;
-  //     }
-  //     if (ItemInArray(discard, collisionPairCount*2, positions[i][1])){
-  //       discard[discardInc] = positions[i][1];
-  //       discardInc++;
-  //     }
-  //
-  //     // make new body
-  //     generatedBodies[i] = joinBodies(b[positions[i][0]], b[positions[i][1]]);
-  //   }
-  // }
-  //
-  //
-  // int newBodyCount = NumberOfBodies - discardInc + collisionPairCount;
-  //
-  // // make new array of bodies.
-  // Body newBodies[newBodyCount];
-  //
-  // int i = 0;
-  // int c = 0;
-  // // add the current bodies to new list of bodies
-  // while(c < NumberOfBodies){
-  //   bool badi = ItemInArray(discard, collisionPairCount*2, i);
-  //   if (badi == false){
-  //     // add it to new list of bodies.
-  //     newBodies[i] = b[c];
-  //     i++;
-  //   }
-  //   c++;
-  // }
-  //
-  // // add the newly formed bodies to list.
-  // for (int k = 0; k < collisionPairCount; k++){
-  //   newBodies[i + k] = generatedBodies[k];
-  // }
-  //
-  // // set current body pointer to the new bodies pointer.
-  // // set new number of bodies
-  // NumberOfBodies = newBodyCount;
-
-  // return newBodies;
-  // return newBodyCount;
 }
 
 // -------------------------------------------
