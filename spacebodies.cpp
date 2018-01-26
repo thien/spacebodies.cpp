@@ -48,6 +48,12 @@ class Body {
       }
       mass = nm;
     }
+
+    void print(int bodyID){
+      // literally prints body statistics.
+      printf("Body %5d: %7.8f  %7.8f  %7.8f  %7.3f  %7.3f  %7.3f  %7.3f \n",
+        bodyID, x[0], x[1], x[2], v[0], v[1], v[2], mass);
+    }
 };
 
 // ---------------------------
@@ -221,7 +227,6 @@ void checkCollision(Body b[]){
   // std::cerr << "Reducing The Number of Bodies to " << newBodyCount << std::endl;
 
   while (collisionPairCount > 0){
-    // std::cerr <<collisionPairCount << std::endl;
     // out of the two items, which one is the smallest one? (doesn't matter rly)
     int u = positions[collisionPairCount-1][0];
     int v = positions[collisionPairCount-1][1];
@@ -314,11 +319,6 @@ double updateTimeStep(double beforeTS, Body a, Body b, double distance, double* 
   return timestep;
 }
 
-// literally prints body statistics.
-void printBodyMessage(Body a, int j){
-  printf("Body %5d: %7.8f  %7.8f  %7.8f  %7.3f  %7.3f  %7.3f  %7.3f \n", j, a.x[0], a.x[1], a.x[2], a.v[0], a.v[1], a.v[2], a.mass);
-}
-
 // function that updates the positions of the particles in space
 void updateBodies(Body* bodies) {
   printf("\n\n");
@@ -327,7 +327,7 @@ void updateBodies(Body* bodies) {
 
   for (int j=0; j<NumberOfBodies; j++) {
     // now we can print the position of the space body
-    printBodyMessage(bodies[j], j);
+    bodies[j].print(j);
 
     // create force variable for the object (has 3 dimensions for x,y,z)
     double force[3];
