@@ -176,25 +176,27 @@ void closeParaviewVideoFile() {
 
 // -------------------------------------------
 
-// DONE
+// Function to join two collided bodies and joins them together to create
+// A merged body.
 Body joinBodies(Body x, Body y){
   // joins the forces and the masses of two bodies.
   // The new body shall have a new mass that is equal to the sum of the masses of the original bodies and an averaged velocity (derive the formulae and present it in the report; you might want to implement some momentum-preserving scheme, i.e. mass-averaged result velocities, but the assignment is about the coding not about realistic physics, so a simple average of velocity components does the job).
 
   Body z;
+  // combine mass.
   z.mass = x.mass + y.mass;
   for (int i; i < 3; i++){
     // get position of one of the colluded bodies
     z.x[i] = x.x[i];
-
-     std::cerr << "v" << x.v[i] << ", " << y.v[i] << " : " <<  x.v[i] - y.v[i] << std::endl;
     // calculate velocity of new item.
-    z.v[i] = (x.v[i] - y.v[i]);
+    double velocity_i = (x.v[i] + y.v[i]);
+    z.v[i] = velocity_i;
+
+    std::cerr << "v:" << x.v[i] << ", " << y.v[i] << " = " <<  velocity_i << std::endl;
   }
   return z;
 }
 
-// DONE (NEEDS TESTING)
 void checkCollision(Body b[]){
   // create space so we can find out which bodies are colliding with each other
   int positions[NumberOfBodies][2];
@@ -286,7 +288,10 @@ void setUp(int argc, char** argv, Body* b) {
 
 // TODO
 double updateTimeStep(double beforeTS, Body a, Body b, double distance, double* force){
-  // the template code uses a fixed time step. Augment the code such that an appropriate time step size is chosen and no collisions are left out, i.e. bodies do not fly through each other.
+  // the template code uses a fixed time step.
+  // Augment the code such that an appropriate time step size
+  // is chosen and no collisions are left out, i.e. bodies
+  // do not fly through each other.
 
   double timestep = beforeTS;
   // std::cerr << "old timestep:" << timestep << std::endl;
