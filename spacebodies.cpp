@@ -18,6 +18,8 @@
 #include <string>
 #include <cstdlib>
 #include <math.h>
+#include <unordered_map>
+
 
 double t = 0;
 double tFinal = 0;
@@ -192,7 +194,7 @@ Body joinBodies(Body x, Body y){
     double velocity_i = (x.v[i] + y.v[i]);
     z.v[i] = velocity_i;
 
-    std::cerr << "v:" << x.v[i] << ", " << y.v[i] << " = " <<  velocity_i << std::endl;
+    // std::cerr << "v:" << x.v[i] << ", " << y.v[i] << " = " <<  velocity_i << std::endl;
   }
   return z;
 }
@@ -201,6 +203,7 @@ void checkCollision(Body b[]){
   // create space so we can find out which bodies are colliding with each other
   int positions[NumberOfBodies][2];
   int collisionPairCount = 0;
+  std::unordered_map<std::string,bool> used_bodies;
 
   // std::cerr << "Finding Collisions.." << std::endl;
 
@@ -218,36 +221,72 @@ void checkCollision(Body b[]){
           positions[collisionPairCount][0] = i;
           positions[collisionPairCount][1] = j;
           collisionPairCount++;
+
+          // std::cerr << "Collision Found:" << i << ","<< j << " Count:"<< collisionPairCount << std::endl;
         }
       }
     }
   }
+  //
+  // // Iterate and print keys and values of unordered_map
+  // for( const auto& n : used_bodies ) {
+  //     std::cout << "Key:[" << n.first << "] Value:[" << n.second << "]\n";
+  // }
 
-  // This is the new size of bodies.
-  int newBodyCount = NumberOfBodies - collisionPairCount;
-
-  // std::cerr << "Reducing The Number of Bodies to " << newBodyCount << std::endl;
+  // initiate new pos of collided bodies.
+  int replacementBodies[NumberOfBodies];
+  for (int i = 0; i < NumberOfBodies; i++){
+    replacementBodies[i] = -1;
+  }
 
   while (collisionPairCount > 0){
     // out of the two items, which one is the smallest one? (doesn't matter rly)
     int u = positions[collisionPairCount-1][0];
     int v = positions[collisionPairCount-1][1];
 
-    if (positions[collisionPairCount-1][0] < positions[collisionPairCount-1][1]){
-      u = positions[collisionPairCount-1][0];
-      v = positions[collisionPairCount-1][1];
+    // std::cerr << "____" <<std::endl;
+    // std::cerr << "Manipulating - u:"<<u<<", v:" << v <<std::endl;
+
+    if (replacementBodies[u] != -1){
+      // std::cerr << "u:"<<u<<" should be " << replacementBodies[u] <<std::endl;
+      u = replacementBodies[u];
+    }
+    if (replacementBodies[v] != -1){
+      // std::cerr << "v:"<<v<<" should be " << replacementBodies[v] <<std::endl;
+      v = replacementBodies[v];
     }
 
-    // replace body at smaller index with the colluded bodies.
-    b[u] = joinBodies(b[u], b[v]);
-    // swap higher index with the last item in the list
-    b[v] = b[NumberOfBodies-1];
-    // null the last item in the list to reduce size.
+    // disgusting swap
+    int k = 0;
+    if (u > v){
+      k = u;
+      u = v;
+      v = k;
+    }
+
+    // std::cerr << "Chosen: - u:"<<u<<", v:" << v <<std::endl;
+
+    // if they're the same then do nothing..
+    if (u - v != 0){
+
+      auto identifier = std::to_string(u) + "_" + std::to_string(v);
+
+      if (used_bodies[identifier] != true){
+        // replace body at smaller index with the colluded bodies.
+        b[u] = joinBodies(b[u], b[v]);
+        // swap higher index with the last item in the list
+        b[v] = b[NumberOfBodies-1];
+        // add the replacement for v to go to u.
+        replacementBodies[v] = u;
+        used_bodies[identifier] = true;
+        // std::cerr << "this current v:"<<v <<" is now going to "<< u << std::endl;
+        NumberOfBodies--;
+      }
+      // null the last item in the list to reduce size.
+      }
     collisionPairCount--;
   }
 
-  // update the number of bodies cus you just killed some lol
-  NumberOfBodies = newBodyCount;
 }
 
 // -------------------------------------------
@@ -354,8 +393,8 @@ void updateBodies(Body* bodies) {
         // update force values (for x,y,z)
 
         // don't even bother trying to make this in a loop.
-        force[0] += (bodies[i].x[0]-bodies[j].x[0]) * combinedMass / distance / distance / distance;
-        force[1] += (bodies[i].x[1]-bodies[j].x[1]) * combinedMass / distance / distance / distance;
+        force[0] += (bodies[i].x[0]-bodies[j].x[0]) * combinedMass / distance;
+        force[1] += (bodies[i].x[1]-bodies[j].x[1]) * combinedMass / distance;
         force[2] += (bodies[i].x[2]-bodies[j].x[2]) * combinedMass / distance / distance / distance;
 
         if (adaptiveTimeStepCheck == true){
