@@ -193,8 +193,6 @@ Body joinBodies(Body x, Body y){
     // calculate velocity of new item.
     double velocity_i = (x.v[i] + y.v[i]);
     z.v[i] = velocity_i;
-
-    // std::cerr << "v:" << x.v[i] << ", " << y.v[i] << " = " <<  velocity_i << std::endl;
   }
   return z;
 }
@@ -204,8 +202,6 @@ void checkCollision(Body b[]){
   int positions[NumberOfBodies][2];
   int collisionPairCount = 0;
   std::unordered_map<std::string,bool> used_bodies;
-
-  // std::cerr << "Finding Collisions.." << std::endl;
 
   // find all possible collisions between particles.
   for (int i = 0; i < NumberOfBodies; i++){
@@ -222,16 +218,10 @@ void checkCollision(Body b[]){
           positions[collisionPairCount][1] = j;
           collisionPairCount++;
 
-          // std::cerr << "Collision Found:" << i << ","<< j << " Count:"<< collisionPairCount << std::endl;
         }
       }
     }
   }
-  //
-  // // Iterate and print keys and values of unordered_map
-  // for( const auto& n : used_bodies ) {
-  //     std::cout << "Key:[" << n.first << "] Value:[" << n.second << "]\n";
-  // }
 
   // initiate new pos of collided bodies.
   int replacementBodies[NumberOfBodies];
@@ -244,31 +234,17 @@ void checkCollision(Body b[]){
     int u = positions[collisionPairCount-1][0];
     int v = positions[collisionPairCount-1][1];
 
-    // std::cerr << "____" <<std::endl;
-    // std::cerr << "Manipulating - u:"<<u<<", v:" << v <<std::endl;
+    // if u has been used prior, replace u with its offset value (cus its been)
+    // made already.
+    if (replacementBodies[u] != -1){u = replacementBodies[u];}
+    if (replacementBodies[v] != -1){v = replacementBodies[v];}
 
-    if (replacementBodies[u] != -1){
-      // std::cerr << "u:"<<u<<" should be " << replacementBodies[u] <<std::endl;
-      u = replacementBodies[u];
-    }
-    if (replacementBodies[v] != -1){
-      // std::cerr << "v:"<<v<<" should be " << replacementBodies[v] <<std::endl;
-      v = replacementBodies[v];
-    }
-
-    // disgusting swap
+    // disgusting swap of u and v.
     int k = 0;
-    if (u > v){
-      k = u;
-      u = v;
-      v = k;
-    }
-
-    // std::cerr << "Chosen: - u:"<<u<<", v:" << v <<std::endl;
+    if (u > v){k = u; u = v; v = k;}
 
     // if they're the same then do nothing..
     if (u - v != 0){
-
       auto identifier = std::to_string(u) + "_" + std::to_string(v);
 
       if (used_bodies[identifier] != true){
@@ -279,11 +255,11 @@ void checkCollision(Body b[]){
         // add the replacement for v to go to u.
         replacementBodies[v] = u;
         used_bodies[identifier] = true;
-        // std::cerr << "this current v:"<<v <<" is now going to "<< u << std::endl;
+        // since we've merged bodies, reduce the body count.
         NumberOfBodies--;
       }
-      // null the last item in the list to reduce size.
-      }
+    }
+    // update iterations.
     collisionPairCount--;
   }
 
