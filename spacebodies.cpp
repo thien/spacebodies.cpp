@@ -24,7 +24,7 @@
 double t = 0;
 double tFinal = 0;
 bool adaptiveTimeStepCheck = true;
-double defaultTimeStepSize = 1;
+double defaultTimeStepSize = 0.0001;
 double smallestDiffCoefficent = 100;
 int NumberOfBodies = 0;
 
@@ -371,7 +371,7 @@ void updateBodies(Body* bodies) {
         // don't even bother trying to make this in a loop.
         force[0] += (bodies[i].x[0]-bodies[j].x[0]) * combinedMass / distance;
         force[1] += (bodies[i].x[1]-bodies[j].x[1]) * combinedMass / distance;
-        force[2] += (bodies[i].x[2]-bodies[j].x[2]) * combinedMass / distance / distance / distance;
+        force[2] += (bodies[i].x[2]-bodies[j].x[2]) * combinedMass / distance;
 
         if (adaptiveTimeStepCheck == true){
           // update timestep if needed
