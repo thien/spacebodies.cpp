@@ -24,7 +24,7 @@
 double t = 0;
 double tFinal = 0;
 bool adaptiveTimeStepCheck = true;
-double defaultTimeStepSize = 0.0000001;
+double defaultTimeStepSize = 0.01;
 double smallestDiffCoefficent = 100;
 int NumberOfBodies = 0;
 
@@ -55,6 +55,7 @@ class Body {
     }
 
     void resetForce(){
+      // printf("resetting forces \n");
       for (int i = 0; i < 3; i++) {
           force[i] = 0;
       }
@@ -62,7 +63,7 @@ class Body {
 
     void print(int bodyID){
       // literally prints body statistics.
-      printf("Body %5d: %7.8f  %7.8f  %7.8f  %7.3f  %7.3f  %7.3f  %7.3f \n",
+      printf("Body %5d: %+7.8f  %+7.8f  %+7.8f  %+7.3f  %+7.3f  %+7.3f  %+7.3f \n",
         bodyID, x[0], x[1], x[2], v[0], v[1], v[2], mass);
     }
 };
@@ -338,20 +339,28 @@ double updateTimeStep(double beforeTS, Body a, Body b){
     // see if they would collide with each other or zoom past.
     // if they zoom past and the trajectory of the bodies angles are within each other
     // reduce the time and start again.
-      Body newA;
-      Body newB;
-      // calculate the next distance with the current timestep
-      for (int k = 0; k < 3; k++){
-        newA.x[k] = a.x[k] + (timestep * a.v[k]);
-        newA.v[k] = a.v[k] + (timestep * (a.force[k] / a.mass));
-        newB.x[k] = b.x[k] + (timestep * b.v[k]);
-        newB.v[k] = b.v[k] + (timestep * (a.force[k] / b.mass));
+      // Body newA;
+      // Body newB;
+      // // calculate the next distance with the current timestep
+      // for (int k = 0; k < 3; k++){
+      //   newA.x[k] = a.x[k] + (timestep * a.v[k]);
+      //   newA.v[k] = a.v[k] + (timestep * (a.force[k] / a.mass));
+      //   newB.x[k] = b.x[k] + (timestep * b.v[k]);
+      //   newB.v[k] = b.v[k] + (timestep * (a.force[k] / b.mass));
+      // }
+      // double nextDistance = sqrt(
+      //   (newB.x[0]-newA.x[0]) * (newB.x[0]-newA.x[0]) +
+      //   (newB.x[1]-newA.x[1]) * (newB.x[1]-newA.x[1]) +
+      //   (newB.x[2]-newA.x[2]) * (newB.x[2]-newA.x[2])
+      // );
+
+      double EPS = 1e-4;
+      for (int i = 0; i < 3; i++){
+
+        if (a.v[i] > 0 and (abs(timestep * a.force[0]/a.mass)/a.v[0] > EPS)){
+          timestep = timestep/2;
+        } 
       }
-      double nextDistance = sqrt(
-        (newB.x[0]-newA.x[0]) * (newB.x[0]-newA.x[0]) +
-        (newB.x[1]-newA.x[1]) * (newB.x[1]-newA.x[1]) +
-        (newB.x[2]-newA.x[2]) * (newB.x[2]-newA.x[2])
-      );
 
       // ideally we'd like the new distance to be within the parameters of the old distance.
       // is that distance too much?
@@ -374,7 +383,7 @@ void updateBodies(Body* bodies) {
     // now we can print the position of the space body
     bodies[j].print(j);
 
-    double closestDistance = 999;
+    double closestDistance = 999999;
     int closestIndex = 0;
 
     for (int i=0; i<NumberOfBodies; i++) {
@@ -400,21 +409,31 @@ void updateBodies(Body* bodies) {
         bodies[j].force[1] += (bodies[i].x[1]-bodies[j].x[1]) * combinedMass / distance / distance / distance;
         bodies[j].force[2] += (bodies[i].x[2]-bodies[j].x[2]) * combinedMass / distance / distance / distance;
 
-        // // print force and distance
+        // // // print force and distance
         // std::cerr << "Distance:  "<<distance <<", Dist^-3: "<<distance/distance/distance<< std::endl;
-        // std::cerr << "Force:     "<<force[0]<< ", "<<force[1]<< ", "<<force[2]<<std::endl;
       }
     }
+
+     for (int k=0; k<3; k++){
+      if (bodies[j].force[k] < 1e-8){
+        bodies[j].force[k] = 0;
+      }
+     }
+    std::cerr << "Force:     "<<bodies[j].force[0]<< ", "<<bodies[j].force[1]<< ", "<<bodies[j].force[2]<<std::endl;
+
 
     if (adaptiveTimeStepCheck == true){
       // update timestep if needed
       timestep = updateTimeStep(timestep, bodies[j], bodies[closestIndex]);
     }
+     std::cerr << "Timestep:  "<<timestep<< std::endl;
+  }
 
-    
-    // once we've also calculated the timestep
+  // once we've also calculated the timestep
+  for (int j=0; j<NumberOfBodies; j++){
     // update position and velocity of body
     for (int k=0; k<3; k++){
+      // update the position and velocity of the body.
       bodies[j].nx[k] = bodies[j].x[k] + (timestep * bodies[j].v[k]);
       bodies[j].nv[k] = bodies[j].v[k] + (timestep * (bodies[j].force[k] / bodies[j].mass));
     }
