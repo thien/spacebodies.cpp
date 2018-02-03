@@ -24,7 +24,7 @@
 double t = 0;
 double tFinal = 0;
 bool adaptiveTimeStepCheck = true;
-double defaultTimeStepSize = 0.0001;
+double defaultTimeStepSize = 0.0000001;
 double smallestDiffCoefficent = 100;
 int NumberOfBodies = 0;
 
@@ -35,6 +35,7 @@ int NumberOfBodies = 0;
 class Body {
 
   public:
+    double force[3]; //body force
     double x[3];   // displacement of body
     double v[3];   // velocity of body
     double mass;    // body mass
@@ -49,6 +50,14 @@ class Body {
           v[i] = nv[i];
       }
       mass = nm;
+      // also reset the force values when we're done.
+      resetForce();
+    }
+
+    void resetForce(){
+      for (int i = 0; i < 3; i++) {
+          force[i] = 0;
+      }
     }
 
     void print(int bodyID){
@@ -96,37 +105,37 @@ class myFloat {
 
 // ---------------------------
 
-// Taylor Series (currently Sine as example)
-// convert to radians to degree
-double toRadians(double angdeg){
-  //x is in radians
-  const double PI = 3.14159265358979323846;
-  return angdeg / 180.0 * PI;
-}
-//factorial function
-double fact(double x){
-  // calculate factorial for denominator
-  if (x==0 || x==1) {
-    return 1;
-  } else {
-    return (x * fact(x - 1));
-  }
-}
-//mySin function
-double mySin(double x){
-  double sum = 0.0;
-  for(int i = 0; i < 9; i++){
-    double top = pow(-1, i) * pow(x, 2 * i + 1);  //calculation for nominator
-    double bottom = fact(2 * i + 1);              //calculation for denominator
-    sum = sum + top / bottom;                     //1 - x^2/2! + x^4/4! - x^6/6!
-  }
-  return sum;
-}
-// Test Code for sine
-void runSin(){
-  double param = 45, result;
-  result= mySin(toRadians(param));
-}
+// // Taylor Series (currently Sine as example)
+// // convert to radians to degree
+// double toRadians(double angdeg){
+//   //x is in radians
+//   const double PI = 3.14159265358979323846;
+//   return angdeg / 180.0 * PI;
+// }
+// //factorial function
+// double fact(double x){
+//   // calculate factorial for denominator
+//   if (x==0 || x==1) {
+//     return 1;
+//   } else {
+//     return (x * fact(x - 1));
+//   }
+// }
+// //mySin function
+// double mySin(double x){
+//   double sum = 0.0;
+//   for(int i = 0; i < 9; i++){
+//     double top = pow(-1, i) * pow(x, 2 * i + 1);  //calculation for nominator
+//     double bottom = fact(2 * i + 1);              //calculation for denominator
+//     sum = sum + top / bottom;                     //1 - x^2/2! + x^4/4! - x^6/6!
+//   }
+//   return sum;
+// }
+// // Test Code for sine
+// void runSin(){
+//   double param = 45, result;
+//   result= mySin(toRadians(param));
+// }
 
 // ---------------------------
 /*
@@ -302,7 +311,14 @@ void setUp(int argc, char** argv, Body* b) {
 }
 
 // TODO
-double updateTimeStep(double beforeTS, Body a, Body b, double distance, double* force){
+double updateTimeStep(double beforeTS, Body a, Body b){
+
+  double distance = sqrt(
+    (b.x[0]-a.x[0]) * (b.x[0]-a.x[0]) +
+    (b.x[1]-a.x[1]) * (b.x[1]-a.x[1]) +
+    (b.x[2]-a.x[2]) * (b.x[2]-a.x[2])
+  );
+
   // the template code uses a fixed time step.
   // Augment the code such that an appropriate time step size
   // is chosen and no collisions are left out, i.e. bodies
@@ -311,30 +327,39 @@ double updateTimeStep(double beforeTS, Body a, Body b, double distance, double* 
   double timestep = beforeTS;
   // std::cerr << "old timestep:" << timestep << std::endl;
   // check if that timestep is tiny.
+
+  // we have a distance that is quite small.
+  // we need to see whether the new distance will collide with them or go past them
+
+  // is the timestep too small? (your cap is 1e^-10)
   if (timestep >= 1e-8){
-    if (distance > 0){
-      double velocity = sqrt(
-        (a.v[0] * a.v[0]) +
-        (a.v[1] * a.v[1]) +
-        (a.v[2] * a.v[2])
-      );
-      double oForce = sqrt(
-        (force[0] * force[0]) +
-        (force[1] * force[1]) +
-        (force[2] * force[2])
-      );
-      // std::cerr << "Velocity: " << velocity << ", Ting: " << abs(timestep * oForce / a.mass) << std::endl;
-      // while ((velocity > 0) && (abs(timestep * oForce / a.mass) > 0.0001)){
-      //   // std::cerr << "Halving timestep" << std::endl;
-      //   // std::cerr << "Velocity: " << velocity << ", Ting: " << abs(timestep * oForce / a.mass) << std::endl;
-      //   timestep = timestep / 2;
-      // }
-      while ((velocity * timestep) > distance){
-        timestep = timestep / 2;
-        // std::cerr << "velo*time:   " << velocity * timestep << std::endl;
-        // std::cerr << "new timestep:" << timestep << std::endl;
+    // calculate the angle of their current bodies velocities
+    // guestimate the body's new positions using vt + s = ns
+    // see if they would collide with each other or zoom past.
+    // if they zoom past and the trajectory of the bodies angles are within each other
+    // reduce the time and start again.
+      Body newA;
+      Body newB;
+      // calculate the next distance with the current timestep
+      for (int k = 0; k < 3; k++){
+        newA.x[k] = a.x[k] + (timestep * a.v[k]);
+        newA.v[k] = a.v[k] + (timestep * (a.force[k] / a.mass));
+        newB.x[k] = b.x[k] + (timestep * b.v[k]);
+        newB.v[k] = b.v[k] + (timestep * (a.force[k] / b.mass));
       }
-    }
+      double nextDistance = sqrt(
+        (newB.x[0]-newA.x[0]) * (newB.x[0]-newA.x[0]) +
+        (newB.x[1]-newA.x[1]) * (newB.x[1]-newA.x[1]) +
+        (newB.x[2]-newA.x[2]) * (newB.x[2]-newA.x[2])
+      );
+
+      // ideally we'd like the new distance to be within the parameters of the old distance.
+      // is that distance too much?
+        // reduce
+      // else
+        // reduce the distance and try again
+
+      // calculate the new position
   }
   return timestep;
 }
@@ -349,41 +374,49 @@ void updateBodies(Body* bodies) {
     // now we can print the position of the space body
     bodies[j].print(j);
 
-    // create force variable for the object (has 3 dimensions for x,y,z)
-    double force[3];
-    force[0] = 0.0;
-    force[1] = 0.0;
-    force[2] = 0.0;
+    double closestDistance = 999;
+    int closestIndex = 0;
 
     for (int i=0; i<NumberOfBodies; i++) {
-      // make sure it doesn't interact with itself.
-      if (i != j){
+      if (i != j){ // make sure it doesn't interact with itself.
         // calculate distance
         double distance = sqrt(
           (bodies[j].x[0]-bodies[i].x[0]) * (bodies[j].x[0]-bodies[i].x[0]) +
           (bodies[j].x[1]-bodies[i].x[1]) * (bodies[j].x[1]-bodies[i].x[1]) +
           (bodies[j].x[2]-bodies[i].x[2]) * (bodies[j].x[2]-bodies[i].x[2])
         );
+
+        // check if this is the closest body to date
+        if (closestDistance > distance){
+          closestDistance = distance;
+          closestIndex = i;
+        }
+
         // calculate combined mass
         double combinedMass = bodies[i].mass * bodies[j].mass;
+
         // update force values (for x,y,z)
+        bodies[j].force[0] += (bodies[i].x[0]-bodies[j].x[0]) * combinedMass / distance / distance / distance;
+        bodies[j].force[1] += (bodies[i].x[1]-bodies[j].x[1]) * combinedMass / distance / distance / distance;
+        bodies[j].force[2] += (bodies[i].x[2]-bodies[j].x[2]) * combinedMass / distance / distance / distance;
 
-        // don't even bother trying to make this in a loop.
-        force[0] += (bodies[i].x[0]-bodies[j].x[0]) * combinedMass / distance;
-        force[1] += (bodies[i].x[1]-bodies[j].x[1]) * combinedMass / distance;
-        force[2] += (bodies[i].x[2]-bodies[j].x[2]) * combinedMass / distance;
-
-        if (adaptiveTimeStepCheck == true){
-          // update timestep if needed
-          timestep = updateTimeStep(timestep, bodies[i], bodies[j], distance, force);
-        }
+        // // print force and distance
+        // std::cerr << "Distance:  "<<distance <<", Dist^-3: "<<distance/distance/distance<< std::endl;
+        // std::cerr << "Force:     "<<force[0]<< ", "<<force[1]<< ", "<<force[2]<<std::endl;
       }
     }
+
+    if (adaptiveTimeStepCheck == true){
+      // update timestep if needed
+      timestep = updateTimeStep(timestep, bodies[j], bodies[closestIndex]);
+    }
+
+    
     // once we've also calculated the timestep
     // update position and velocity of body
     for (int k=0; k<3; k++){
       bodies[j].nx[k] = bodies[j].x[k] + (timestep * bodies[j].v[k]);
-      bodies[j].nv[k] = bodies[j].v[k] + (timestep * (force[k] / bodies[j].mass));
+      bodies[j].nv[k] = bodies[j].v[k] + (timestep * (bodies[j].force[k] / bodies[j].mass));
     }
     bodies[j].nm = bodies[j].mass;
   }
