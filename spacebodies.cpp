@@ -26,7 +26,7 @@
 double t = 0;
 double tFinal = 0;
 bool adaptiveTimeStepCheck = true;
-double defaultTimeStepSize = 0.001;
+double defaultTimeStepSize = 0.01;
 int NumberOfBodies = 0;
 double smallSizeLimit = 1e-8;
 
@@ -417,8 +417,8 @@ void updateBodies(Body* bodies) {
   for (int j=0; j<NumberOfBodies; j++) {
     // now we can print the position of the space body
     bodies[j].print(j);
-
-    for (int i=0; i<NumberOfBodies; i++) {
+    // only calculate half the calculations!
+    for (int i=0; i<j; i++) {
       if (i != j){ // make sure it doesn't interact with itself.
         // calculate distance
         double distance = sqrt(
@@ -426,57 +426,38 @@ void updateBodies(Body* bodies) {
           (bodies[j].x[1]-bodies[i].x[1]) * (bodies[j].x[1]-bodies[i].x[1]) +
           (bodies[j].x[2]-bodies[i].x[2]) * (bodies[j].x[2]-bodies[i].x[2])
         );
-
         // check if this is the closest body to date
         if (closestDistance > distance){
           closestDistance = distance;
           closestIndex1 = i;
           closestIndex2 = j;
         }
-
         // calculate combined mass
         double combinedMass = bodies[i].mass * bodies[j].mass;
-
         // update force values (for x,y,z)
-        // explicit euler to predict velocity
-        double calc1 = (bodies[j].x[0]-bodies[i].x[0]);
-        double calc2 = (bodies[j].x[1]-bodies[i].x[1]);
-        double calc3 = (bodies[j].x[2]-bodies[i].x[2]);
         double calc5 = distance/distance/distance;
         double calc4 = calc5/combinedMass;
         // std::cerr <<"D: "<<distance << " C1:  "<<calc1 <<", C2: "<<calc2 <<", C3: "<<calc3 <<", C4: "<<calc4 <<", C5: "<<calc5 << std::endl;
-      
         for (int k = 0; k < 3; k++){
           bodies[j].force[k] += abs(bodies[i].x[k]-bodies[j].x[k]) * calc4;
+          bodies[i].force[k] += abs(bodies[i].x[k]-bodies[j].x[k]) * calc4;
         }
-
       }
     }
-
-    // check if the force is too small; if it is set it to 0.
+    // check if the force is too small; if it is set it to 0 to make life easier.
     bodies[j].capForceLimit();
-
-    // print force
-    // bodies[j].printForce();
-    // bodies[j].resetForce();
-    // bodies[j].printForce();
   }
 
   if (adaptiveTimeStepCheck == true){
     // update timestep if needed
     timestep = updateTimeStep(timestep, bodies[closestIndex2], bodies[closestIndex1]);
   }
-  //  std::cerr << " Timestep:  "<<timestep<< std::endl;
 
   // once we've also calculated the timestep
   for (int j=0; j<NumberOfBodies; j++){
     // update position and velocity of body
     for (int k=0; k<3; k++){
       // update the position and velocity of the body.
-      // std::cerr << "Timestep :  "<<timestep<< std::endl;
-      // std::cerr << (timestep * bodies[j].v[k]) <<", "<< (timestep * (bodies[j].force[k] / bodies[j].mass))<< std::endl;
-
-      // explicit euler to predict velocity
       bodies[j].nx[k] = bodies[j].x[k] + (timestep * bodies[j].v[k]);
       bodies[j].nv[k] = bodies[j].v[k] + (timestep * (bodies[j].force[k] / bodies[j].mass));
     }
@@ -487,7 +468,6 @@ void updateBodies(Body* bodies) {
     // make every space body assign their new values.
     bodies[j].assignNewValues();
   }
-
   // check for any collisions
   // if theres collisions, then make new body and remove the collided bodies
   checkCollision(bodies);
