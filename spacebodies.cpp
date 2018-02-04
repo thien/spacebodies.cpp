@@ -26,7 +26,7 @@
 double t = 0;
 double tFinal = 0;
 bool adaptiveTimeStepCheck = true;
-double defaultTimeStepSize = 0.1;
+double defaultTimeStepSize = 0.0001;
 double smallestDiffCoefficent = 100;
 int NumberOfBodies = 0;
 double smallSizeLimit = 1e-8;
@@ -63,6 +63,10 @@ class Body {
           force[k] = 0;
         }
       }
+    }
+
+    void printForce(){
+      std::cerr << "    Force:  "<<force[0]<< ", "<<force[1]<< ", "<<force[2]<<std::endl;
     }
 
     void resetForce(){
@@ -416,9 +420,21 @@ void updateBodies(Body* bodies) {
         double combinedMass = bodies[i].mass * bodies[j].mass;
 
         // update force values (for x,y,z)
-        bodies[j].force[0] += (bodies[i].x[0]-bodies[j].x[0]) * combinedMass / distance / distance / distance;
-        bodies[j].force[1] += (bodies[i].x[1]-bodies[j].x[1]) * combinedMass / distance / distance / distance;
-        bodies[j].force[2] += (bodies[i].x[2]-bodies[j].x[2]) * combinedMass / distance / distance / distance;
+        double calc1 = (bodies[j].x[0]-bodies[i].x[0]);
+        double calc2 = (bodies[j].x[1]-bodies[i].x[1]);
+        double calc3 = (bodies[j].x[2]-bodies[i].x[2]);
+        double calc4 = combinedMass / distance / distance / distance;
+        // std::cerr << "C1:  "<<calc1 <<", C2: "<<calc2 <<", C3: "<<calc3 <<", C4: "<<calc4 << std::endl;
+        // bodies[j].force[0] += (bodies[i].x[0]-bodies[j].x[0]) * combinedMass / distance / distance / distance;
+        // bodies[j].force[1] += (bodies[i].x[1]-bodies[j].x[1]) * combinedMass / distance / distance / distance;
+        // bodies[j].force[2] += (bodies[i].x[2]-bodies[j].x[2]) * combinedMass / distance / distance / distance;
+        // bodies[j].force[0] += calc1 * calc4;
+        // bodies[j].force[1] += calc2 * calc4;
+        // bodies[j].force[2] += calc3 * calc4;
+
+        for (int k = 0; k < 3; k++){
+          bodies[j].force[k] += abs(bodies[i].x[k]-bodies[j].x[k]) * calc4;
+        }
 
         // // // print force and distance
         // std::cerr << "Distance:  "<<distance <<", Dist^-3: "<<distance/distance/distance<< std::endl;
@@ -428,14 +444,16 @@ void updateBodies(Body* bodies) {
     // check if the force is too small; if it is set it to 0.
     bodies[j].capForceLimit();
 
-    std::cerr << "Force:     "<<bodies[j].force[0]<< ", "<<bodies[j].force[1]<< ", "<<bodies[j].force[2]<<std::endl;
-
+    // print force
+    bodies[j].printForce();
+    // bodies[j].resetForce();
+    // bodies[j].printForce();
 
     if (adaptiveTimeStepCheck == true){
       // update timestep if needed
       timestep = updateTimeStep(timestep, bodies[j], bodies[closestIndex]);
     }
-     std::cerr << "Timestep:  "<<timestep<< std::endl;
+     std::cerr << " Timestep:  "<<timestep<< std::endl;
   }
 
   // once we've also calculated the timestep
