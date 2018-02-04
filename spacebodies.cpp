@@ -85,75 +85,6 @@ class Body {
 
 // ---------------------------
 
-// Floating Point Class;
-  // Useful for self learning (+ prep for exams
-  const int maxS = 10000;
-
-  class myFloat {
-    public:
-      int s,e;
-      myFloat normalise(myFloat f){
-        myFloat result;
-        result.s = f.s;
-        result.e = f.e;
-        while(result.s > maxS){
-          result.s = result.s / 10;
-          result.e = result.e + 1;
-        }
-        while(result.s < maxS/10){
-          result.s = result.s * 10;
-          result.e = result.e - 1;
-        }
-      return result;
-      }
-      myFloat add(myFloat a, myFloat b){
-        while (a.e < b.e){
-          b.e = b.e-1;
-          b.s = b.s*10;
-        }
-        myFloat result;
-        result.s = a.s + b.s;
-        result.e = a.e;
-        return normalise(result);
-      }
-  };
-
-
-// --------------------------- TAYLOR STUFF
-
-  // // Taylor Series (currently Sine as example)
-  // // convert to radians to degree
-  // double toRadians(double angdeg){
-  //   //x is in radians
-  //   const double PI = 3.14159265358979323846;
-  //   return angdeg / 180.0 * PI;
-  // }
-  // //factorial function
-  // double fact(double x){
-  //   // calculate factorial for denominator
-  //   if (x==0 || x==1) {
-  //     return 1;
-  //   } else {
-  //     return (x * fact(x - 1));
-  //   }
-  // }
-  // //mySin function
-  // double mySin(double x){
-  //   double sum = 0.0;
-  //   for(int i = 0; i < 9; i++){
-  //     double top = pow(-1, i) * pow(x, 2 * i + 1);  //calculation for nominator
-  //     double bottom = fact(2 * i + 1);              //calculation for denominator
-  //     sum = sum + top / bottom;                     //1 - x^2/2! + x^4/4! - x^6/6!
-  //   }
-  //   return sum;
-  // }
-  // // Test Code for sine
-  // void runSin(){
-  //   double param = 45, result;
-  //   result= mySin(toRadians(param));
-  // }
-
-// ---------------------------
 /*
  * Paraview Functions
  * The file format is documented at http://www.vtk.org/wp-content/uploads/2015/04/file-formats.pdf
@@ -223,30 +154,8 @@ Body joinBodies(Body x, Body y){
   return z;
 }
 
-void checkCollision(Body b[]){
-  // create space so we can find out which bodies are colliding with each other
-  int positions[NumberOfBodies][2];
-  int collisionPairCount = 0;
+void checkCollision(Body b[], int positions[][2], int collisionPairCount){
   std::unordered_map<std::string,bool> used_bodies;
-
-  // find all possible collisions between particles.
-  for (int i = 0; i < NumberOfBodies; i++){
-    for (int j = 0; j < i; j++){
-      if (i != j){ // don't calculate distance from itself to itself.
-        double pos = sqrt(
-          (b[j].x[0]-b[i].x[0]) * (b[j].x[0]-b[i].x[0]) +
-          (b[j].x[1]-b[i].x[1]) * (b[j].x[1]-b[i].x[1]) +
-          (b[j].x[2]-b[i].x[2]) * (b[j].x[2]-b[i].x[2])
-        );
-        if (pos <= smallSizeLimit){
-          // Collision means the bodies are closer than 1e-8.
-          positions[collisionPairCount][0] = i;
-          positions[collisionPairCount][1] = j;
-          collisionPairCount++;
-        }
-      }
-    }
-  }
 
   // initiate new pos of collided bodies.
   int replacementBodies[NumberOfBodies];
@@ -413,7 +322,10 @@ void updateBodies(Body* bodies) {
   double closestDistance = 999999;
   int closestIndex1 = 0;
   int closestIndex2 = 0;
-
+  // initiate values we'll use to determine collided bodies
+  int collisions[NumberOfBodies][2];
+  int collisionPairCount = 0;
+  
   for (int j=0; j<NumberOfBodies; j++) {
     // now we can print the position of the space body
     bodies[j].print(j);
@@ -426,11 +338,19 @@ void updateBodies(Body* bodies) {
           (bodies[j].x[1]-bodies[i].x[1]) * (bodies[j].x[1]-bodies[i].x[1]) +
           (bodies[j].x[2]-bodies[i].x[2]) * (bodies[j].x[2]-bodies[i].x[2])
         );
-        // check if this is the closest body to date
-        if (closestDistance > distance){
-          closestDistance = distance;
-          closestIndex1 = i;
-          closestIndex2 = j;
+        // have they collided?
+        if (distance <= smallSizeLimit){
+          // Collision means the bodies are closer than 1e-8.
+          collisions[collisionPairCount][0] = i;
+          collisions[collisionPairCount][1] = j;
+          collisionPairCount++;
+        } else {
+          // check if this is the closest body to date
+          if (closestDistance > distance){
+            closestDistance = distance;
+            closestIndex1 = i;
+            closestIndex2 = j;
+          }
         }
         // calculate combined mass
         double combinedMass = bodies[i].mass * bodies[j].mass;
@@ -470,7 +390,7 @@ void updateBodies(Body* bodies) {
   }
   // check for any collisions
   // if theres collisions, then make new body and remove the collided bodies
-  checkCollision(bodies);
+  checkCollision(bodies, collisions, collisionPairCount);
   // increment the current time with the time step.
   t += timestep;
   // std::cout << "\x1B[2J\x1B[H";
