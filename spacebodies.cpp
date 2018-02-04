@@ -33,8 +33,8 @@ int NumberOfBodies = 0;
 double smallSizeLimit = 1e-8;
 
 // writer variables
-bool isCsvBodyCountWrite = true; // if true, will write a csv that counts the number of bodies over time.
-bool isCsvCollisionWrite = true; // if set to true, it will generate a csv of two bodies and data to show their collision.
+bool isCsvBodyCountWrite = false; // if true, will write a csv that counts the number of bodies over time.
+bool isCsvCollisionWrite = false; // if set to true, it will generate a csv of two bodies and data to show their collision.
 
 std::ofstream csvBodyCountFile ("bodycount.csv");
 std::ofstream csvCollisionFile ("collision.csv");
@@ -54,7 +54,6 @@ void collisionWrite(std::string text){
 // ---------------------------
 
 // Body Class; It'll be useful for when I need to make adjustments.
-
 class Body {
   public:
     double force[3]; //body force
@@ -76,13 +75,9 @@ class Body {
       resetForce();
     }
 
-    // If the bodies force is small enough then we set it to zero.
     void capForceLimit(){
-      for (int k=0; k<3; k++){
-        if (force[k] < smallSizeLimit){
-          force[k] = 0;
-        }
-      }
+      // If the bodies force is small enough then we set it to zero.
+      for (int k=0; k<3; k++){if (force[k] < smallSizeLimit){force[k] = 0;}}
     }
 
     void printForce(){
@@ -90,10 +85,7 @@ class Body {
     }
 
     void resetForce(){
-      // printf("resetting forces \n");
-      for (int i = 0; i < 3; i++) {
-          force[i] = 0;
-      }
+      for (int i = 0; i < 3; i++) {force[i] = 0;}
     }
 
     void print(int bodyID){
@@ -104,12 +96,12 @@ class Body {
     }
 };
 
-// ---------------------------
+// PARAVIEW FUNCTIONS ---------------------------
 
-/*
- * Paraview Functions
- * The file format is documented at http://www.vtk.org/wp-content/uploads/2015/04/file-formats.pdf
- */
+  /*
+  * Paraview Functions
+  * The file format is documented at http://www.vtk.org/wp-content/uploads/2015/04/file-formats.pdf
+  */
 
   std::ofstream videoFile;
 
@@ -410,11 +402,15 @@ void updateBodies(Body* bodies) {
   // if theres collisions, then make new body and remove the collided bodies
   int BeforeBodyCount = NumberOfBodies;
   checkCollision(bodies, collisions, collisionPairCount);
+
+  // write to csv the number of bodies at this state.
   if ((BeforeBodyCount - NumberOfBodies) != 0){
     countWrite(std::to_string(t) + "," + std::to_string(NumberOfBodies) + "\n");
   }
+
   // increment the current time with the time step.
   t += timestep;
+  
   // std::cout << "\x1B[2J\x1B[H";
 }
 
