@@ -26,7 +26,7 @@
 double t = 0;
 double tFinal = 0;
 bool adaptiveTimeStepCheck = true;
-double defaultTimeStepSize = 0.01;
+double defaultTimeStepSize = 0.00001;
 int NumberOfBodies = 0;
 double smallSizeLimit = 1e-8;
 
@@ -563,16 +563,6 @@ void generateCollidingBodies(Body* b){
 
 // -------------------------------------------
 
-// Runs the colliding bodies simulation
-void runCollidingBodies(){
-  // test with random bodies
-    NumberOfBodies = 2;
-    tFinal = 0.01;
-    Body bodies[NumberOfBodies];
-    generateCollidingBodies(bodies);
-    performSpaceBodies(bodies);
-}
-
 // Runs the random bodies simulation
 void runRandomBodies(){
   // test with random bodies
@@ -607,7 +597,7 @@ int main(int argc, char** argv) {
     // exit safely.
     }
   } else {
-    runCollidingBodies();
+    runRandomBodies();
   }
   return 0;
 }
