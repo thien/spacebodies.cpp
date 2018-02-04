@@ -19,21 +19,23 @@
 #include <cstdlib>
 #include <math.h>
 #include <unordered_map>
+// library is used to deduce leading zeros print
+#include <iomanip>
 
 
 double t = 0;
 double tFinal = 0;
 bool adaptiveTimeStepCheck = true;
-double defaultTimeStepSize = 0.01;
+double defaultTimeStepSize = 0.1;
 double smallestDiffCoefficent = 100;
 int NumberOfBodies = 0;
+double smallSizeLimit = 1e-8;
 
 // ---------------------------
 
 // Body Class; It'll be useful for when I need to make adjustments.
 
 class Body {
-
   public:
     double force[3]; //body force
     double x[3];   // displacement of body
@@ -54,6 +56,15 @@ class Body {
       resetForce();
     }
 
+    // If the bodies force is small enough then we set it to zero.
+    void capForceLimit(){
+      for (int k=0; k<3; k++){
+        if (force[k] < smallSizeLimit){
+          force[k] = 0;
+        }
+      }
+    }
+
     void resetForce(){
       // printf("resetting forces \n");
       for (int i = 0; i < 3; i++) {
@@ -63,7 +74,8 @@ class Body {
 
     void print(int bodyID){
       // literally prints body statistics.
-      printf("Body %5d: %+7.8f  %+7.8f  %+7.8f  %+7.3f  %+7.3f  %+7.3f  %+7.3f \n",
+      // Values are (ID, x,y,z, v(x), v(y), v(z), mass)
+      printf("Body %4d: %+010.5f  %+010.5f  %+010.5f  %+010.5f  %+010.5f  %+010.5f  %+010.5f \n",
         bodyID, x[0], x[1], x[2], v[0], v[1], v[2], mass);
     }
 };
@@ -71,72 +83,72 @@ class Body {
 // ---------------------------
 
 // Floating Point Class;
-// Useful for self learning (+ prep for exams
-const int maxS = 10000;
+  // Useful for self learning (+ prep for exams
+  const int maxS = 10000;
 
-class myFloat {
-  public:
-    int s,e;
-    myFloat normalise(myFloat f){
-      myFloat result;
-      result.s = f.s;
-      result.e = f.e;
-      while(result.s > maxS){
-        result.s = result.s / 10;
-        result.e = result.e + 1;
+  class myFloat {
+    public:
+      int s,e;
+      myFloat normalise(myFloat f){
+        myFloat result;
+        result.s = f.s;
+        result.e = f.e;
+        while(result.s > maxS){
+          result.s = result.s / 10;
+          result.e = result.e + 1;
+        }
+        while(result.s < maxS/10){
+          result.s = result.s * 10;
+          result.e = result.e - 1;
+        }
+      return result;
       }
-      while(result.s < maxS/10){
-        result.s = result.s * 10;
-        result.e = result.e - 1;
+      myFloat add(myFloat a, myFloat b){
+        while (a.e < b.e){
+          b.e = b.e-1;
+          b.s = b.s*10;
+        }
+        myFloat result;
+        result.s = a.s + b.s;
+        result.e = a.e;
+        return normalise(result);
       }
-    return result;
-    }
-    myFloat add(myFloat a, myFloat b){
-      while (a.e < b.e){
-        b.e = b.e-1;
-        b.s = b.s*10;
-      }
-      myFloat result;
-      result.s = a.s + b.s;
-      result.e = a.e;
-      return normalise(result);
-    }
-};
+  };
 
 
-// ---------------------------
+// --------------------------- TAYLOR STUFF
 
-// // Taylor Series (currently Sine as example)
-// // convert to radians to degree
-// double toRadians(double angdeg){
-//   //x is in radians
-//   const double PI = 3.14159265358979323846;
-//   return angdeg / 180.0 * PI;
-// }
-// //factorial function
-// double fact(double x){
-//   // calculate factorial for denominator
-//   if (x==0 || x==1) {
-//     return 1;
-//   } else {
-//     return (x * fact(x - 1));
-//   }
-// }
-// //mySin function
-// double mySin(double x){
-//   double sum = 0.0;
-//   for(int i = 0; i < 9; i++){
-//     double top = pow(-1, i) * pow(x, 2 * i + 1);  //calculation for nominator
-//     double bottom = fact(2 * i + 1);              //calculation for denominator
-//     sum = sum + top / bottom;                     //1 - x^2/2! + x^4/4! - x^6/6!
-//   }
-//   return sum;
-// }
-// // Test Code for sine
-// void runSin(){
-//   double param = 45, result;
-//   result= mySin(toRadians(param));
-// }
+  // // Taylor Series (currently Sine as example)
+  // // convert to radians to degree
+  // double toRadians(double angdeg){
+  //   //x is in radians
+  //   const double PI = 3.14159265358979323846;
+  //   return angdeg / 180.0 * PI;
+  // }
+  // //factorial function
+  // double fact(double x){
+  //   // calculate factorial for denominator
+  //   if (x==0 || x==1) {
+  //     return 1;
+  //   } else {
+  //     return (x * fact(x - 1));
+  //   }
+  // }
+  // //mySin function
+  // double mySin(double x){
+  //   double sum = 0.0;
+  //   for(int i = 0; i < 9; i++){
+  //     double top = pow(-1, i) * pow(x, 2 * i + 1);  //calculation for nominator
+  //     double bottom = fact(2 * i + 1);              //calculation for denominator
+  //     sum = sum + top / bottom;                     //1 - x^2/2! + x^4/4! - x^6/6!
+  //   }
+  //   return sum;
+  // }
+  // // Test Code for sine
+  // void runSin(){
+  //   double param = 45, result;
+  //   result= mySin(toRadians(param));
+  // }
 
 // ---------------------------
 /*
@@ -144,47 +156,47 @@ class myFloat {
  * The file format is documented at http://www.vtk.org/wp-content/uploads/2015/04/file-formats.pdf
  */
 
-std::ofstream videoFile;
+  std::ofstream videoFile;
 
-void printParaviewSnapshot(int counter, Body * bodies) {
-  std::stringstream filename;
-  filename << "result-" << counter <<  ".vtp";
-  std::ofstream out( filename.str().c_str() );
-  out << "<VTKFile type=\"PolyData\" >" << std::endl
-      << "<PolyData>" << std::endl
-      << " <Piece NumberOfPoints=\"" << NumberOfBodies << "\">" << std::endl
-      << "  <Points>" << std::endl
-      << "   <DataArray type=\"Float32\" NumberOfComponents=\"3\" format=\"ascii\">";
+  void printParaviewSnapshot(int counter, Body * bodies) {
+    std::stringstream filename;
+    filename << "result-" << counter <<  ".vtp";
+    std::ofstream out( filename.str().c_str() );
+    out << "<VTKFile type=\"PolyData\" >" << std::endl
+        << "<PolyData>" << std::endl
+        << " <Piece NumberOfPoints=\"" << NumberOfBodies << "\">" << std::endl
+        << "  <Points>" << std::endl
+        << "   <DataArray type=\"Float32\" NumberOfComponents=\"3\" format=\"ascii\">";
 
-  for (int i=0; i<NumberOfBodies; i++) {
-    out << bodies[i].x[0]
-        << " "
-        << bodies[i].x[1]
-        << " "
-        << bodies[i].x[2]
-        << " ";
+    for (int i=0; i<NumberOfBodies; i++) {
+      out << bodies[i].x[0]
+          << " "
+          << bodies[i].x[1]
+          << " "
+          << bodies[i].x[2]
+          << " ";
+    }
+
+    out << "   </DataArray>" << std::endl
+        << "  </Points>" << std::endl
+        << " </Piece>" << std::endl
+        << "</PolyData>" << std::endl
+        << "</VTKFile>"  << std::endl;
+
+    videoFile << "<DataSet timestep=\"" << counter << "\" group=\"\" part=\"0\" file=\"" << filename.str() << "\"/>" << std::endl;
   }
 
-  out << "   </DataArray>" << std::endl
-      << "  </Points>" << std::endl
-      << " </Piece>" << std::endl
-      << "</PolyData>" << std::endl
-      << "</VTKFile>"  << std::endl;
+  void openParaviewVideoFile() {
+    videoFile.open( "result.pvd" );
+    videoFile << "<?xml version=\"1.0\"?>" << std::endl
+              << "<VTKFile type=\"Collection\" version=\"0.1\" byte_order=\"LittleEndian\" compressor=\"vtkZLibDataCompressor\">" << std::endl
+              << "<Collection>";
+  }
 
-  videoFile << "<DataSet timestep=\"" << counter << "\" group=\"\" part=\"0\" file=\"" << filename.str() << "\"/>" << std::endl;
-}
-
-void openParaviewVideoFile() {
-  videoFile.open( "result.pvd" );
-  videoFile << "<?xml version=\"1.0\"?>" << std::endl
-            << "<VTKFile type=\"Collection\" version=\"0.1\" byte_order=\"LittleEndian\" compressor=\"vtkZLibDataCompressor\">" << std::endl
-            << "<Collection>";
-}
-
-void closeParaviewVideoFile() {
-  videoFile << "</Collection>"
-            << "</VTKFile>" << std::endl;
-}
+  void closeParaviewVideoFile() {
+    videoFile << "</Collection>"
+              << "</VTKFile>" << std::endl;
+  }
 
 // -------------------------------------------
 
@@ -222,7 +234,7 @@ void checkCollision(Body b[]){
           (b[j].x[1]-b[i].x[1]) * (b[j].x[1]-b[i].x[1]) +
           (b[j].x[2]-b[i].x[2]) * (b[j].x[2]-b[i].x[2])
         );
-        if (pos <= 1e-8){
+        if (pos <= smallSizeLimit){
           // Collision means the bodies are closer than 1e-8.
           positions[collisionPairCount][0] = i;
           positions[collisionPairCount][1] = j;
@@ -333,7 +345,7 @@ double updateTimeStep(double beforeTS, Body a, Body b){
   // we need to see whether the new distance will collide with them or go past them
 
   // is the timestep too small? (your cap is 1e^-10)
-  if (timestep >= 1e-8){
+  if (timestep >= smallSizeLimit){
     // calculate the angle of their current bodies velocities
     // guestimate the body's new positions using vt + s = ns
     // see if they would collide with each other or zoom past.
@@ -375,14 +387,13 @@ double updateTimeStep(double beforeTS, Body a, Body b){
 
 // function that updates the positions of the particles in space
 void updateBodies(Body* bodies) {
-  printf("\n\n");
-  printf ("Time: %4.8f, NumberOfBodies: %1.0d \n", t, NumberOfBodies);
+  printf ("\n\nTime: %4.8f, NumberOfBodies: %1.0d \n", t, NumberOfBodies);
   double timestep = defaultTimeStepSize;
 
   for (int j=0; j<NumberOfBodies; j++) {
     // now we can print the position of the space body
     bodies[j].print(j);
-
+    // initiate positions of the shortest body positions
     double closestDistance = 999999;
     int closestIndex = 0;
 
@@ -414,11 +425,9 @@ void updateBodies(Body* bodies) {
       }
     }
 
-     for (int k=0; k<3; k++){
-      if (bodies[j].force[k] < 1e-8){
-        bodies[j].force[k] = 0;
-      }
-     }
+    // check if the force is too small; if it is set it to 0.
+    bodies[j].capForceLimit();
+
     std::cerr << "Force:     "<<bodies[j].force[0]<< ", "<<bodies[j].force[1]<< ", "<<bodies[j].force[2]<<std::endl;
 
 
