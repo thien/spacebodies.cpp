@@ -26,7 +26,7 @@
 double t = 0;
 double tFinal = 0;
 bool adaptiveTimeStepCheck = true;
-double defaultTimeStepSize = 0.0001;
+double defaultTimeStepSize = 0.000001;
 double smallestDiffCoefficent = 100;
 int NumberOfBodies = 0;
 double smallSizeLimit = 1e-8;
@@ -216,9 +216,10 @@ Body joinBodies(Body x, Body y){
   for (int i; i < 3; i++){
     // get position of one of the colluded bodies
     z.x[i] = x.x[i];
-    // calculate velocity of new item.
-    double velocity_i = (x.v[i] + y.v[i]);
-    z.v[i] = velocity_i;
+    // calculate velocity of new item. (Mass averaged velocities)
+    // std::cerr << "V"<<i<<": "<< z.v[i] << std::endl;
+    z.v[i] = (x.v[i]/x.mass) + (y.v[i]/y.mass);
+    // std::cerr << "V"<<i<<": "<< z.v[i] << std::endl;
   }
   return z;
 }
@@ -370,7 +371,7 @@ double updateTimeStep(double beforeTS, Body a, Body b){
       //   (newB.x[2]-newA.x[2]) * (newB.x[2]-newA.x[2])
       // );
 
-      double EPS = 1e-4;
+      double EPS = 1e-8;
       for (int i = 0; i < 3; i++){
 
         if (a.v[i] > 0 and (abs(timestep * a.force[0]/a.mass)/a.v[0] > EPS)){
@@ -423,21 +424,14 @@ void updateBodies(Body* bodies) {
         double calc1 = (bodies[j].x[0]-bodies[i].x[0]);
         double calc2 = (bodies[j].x[1]-bodies[i].x[1]);
         double calc3 = (bodies[j].x[2]-bodies[i].x[2]);
-        double calc4 = combinedMass / distance / distance / distance;
-        // std::cerr << "C1:  "<<calc1 <<", C2: "<<calc2 <<", C3: "<<calc3 <<", C4: "<<calc4 << std::endl;
-        // bodies[j].force[0] += (bodies[i].x[0]-bodies[j].x[0]) * combinedMass / distance / distance / distance;
-        // bodies[j].force[1] += (bodies[i].x[1]-bodies[j].x[1]) * combinedMass / distance / distance / distance;
-        // bodies[j].force[2] += (bodies[i].x[2]-bodies[j].x[2]) * combinedMass / distance / distance / distance;
-        // bodies[j].force[0] += calc1 * calc4;
-        // bodies[j].force[1] += calc2 * calc4;
-        // bodies[j].force[2] += calc3 * calc4;
-
+        double calc5 = distance/distance/distance;
+        double calc4 = calc5/combinedMass;
+        // std::cerr <<"D: "<<distance << " C1:  "<<calc1 <<", C2: "<<calc2 <<", C3: "<<calc3 <<", C4: "<<calc4 <<", C5: "<<calc5 << std::endl;
+      
         for (int k = 0; k < 3; k++){
           bodies[j].force[k] += abs(bodies[i].x[k]-bodies[j].x[k]) * calc4;
         }
 
-        // // // print force and distance
-        // std::cerr << "Distance:  "<<distance <<", Dist^-3: "<<distance/distance/distance<< std::endl;
       }
     }
 
@@ -445,7 +439,7 @@ void updateBodies(Body* bodies) {
     bodies[j].capForceLimit();
 
     // print force
-    bodies[j].printForce();
+    // bodies[j].printForce();
     // bodies[j].resetForce();
     // bodies[j].printForce();
 
@@ -453,7 +447,7 @@ void updateBodies(Body* bodies) {
       // update timestep if needed
       timestep = updateTimeStep(timestep, bodies[j], bodies[closestIndex]);
     }
-     std::cerr << " Timestep:  "<<timestep<< std::endl;
+    //  std::cerr << " Timestep:  "<<timestep<< std::endl;
   }
 
   // once we've also calculated the timestep
@@ -461,6 +455,8 @@ void updateBodies(Body* bodies) {
     // update position and velocity of body
     for (int k=0; k<3; k++){
       // update the position and velocity of the body.
+      // std::cerr << "Timestep :  "<<timestep<< std::endl;
+      // std::cerr << (timestep * bodies[j].v[k]) <<", "<< (timestep * (bodies[j].force[k] / bodies[j].mass))<< std::endl;
       bodies[j].nx[k] = bodies[j].x[k] + (timestep * bodies[j].v[k]);
       bodies[j].nv[k] = bodies[j].v[k] + (timestep * (bodies[j].force[k] / bodies[j].mass));
     }
