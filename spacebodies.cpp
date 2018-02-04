@@ -19,16 +19,37 @@
 #include <cstdlib>
 #include <math.h>
 #include <unordered_map>
-// library is used to deduce leading zeros print
-#include <iomanip>
+// // library is used to deduce leading zeros print
+// #include <iomanip>
+// library to include writer
+#include <fstream>
 
-
+// setup variables
 double t = 0;
 double tFinal = 0;
 bool adaptiveTimeStepCheck = true;
 double defaultTimeStepSize = 0.00001;
 int NumberOfBodies = 0;
 double smallSizeLimit = 1e-8;
+
+// writer variables
+bool isCsvBodyCountWrite = true; // if true, will write a csv that counts the number of bodies over time.
+bool isCsvCollisionWrite = true; // if set to true, it will generate a csv of two bodies and data to show their collision.
+
+std::ofstream csvBodyCountFile ("bodycount.csv");
+std::ofstream csvCollisionFile ("collision.csv");
+
+// helper functions to write to csv.
+void countWrite(std::string text){
+  if (isCsvBodyCountWrite){
+    csvBodyCountFile << text;
+  }
+}
+void collisionWrite(std::string text){
+  if (isCsvCollisionWrite){
+    csvCollisionFile << text;
+  }
+}
 
 // ---------------------------
 
@@ -316,6 +337,7 @@ double updateTimeStep(double beforeTS, Body a, Body b){
 // function that updates the positions of the particles in space
 void updateBodies(Body* bodies) {
   printf ("\n\nTime: %4.8f, NumberOfBodies: %1.0d \n", t, NumberOfBodies);
+  collisionWrite(std::to_string(t) + "\n");
   double timestep = defaultTimeStepSize;
 
   // initiate positions of the shortest body positions
@@ -364,16 +386,15 @@ void updateBodies(Body* bodies) {
         }
       }
     }
-    // check if the force is too small; if it is set it to 0 to make life easier.
+    // check if the force is too small; if it is set it to 0.
     bodies[j].capForceLimit();
   }
 
   if (adaptiveTimeStepCheck == true){
-    // update timestep if needed
+    // update timestep if needed to accomadate the smallest distnace
     timestep = updateTimeStep(timestep, bodies[closestIndex2], bodies[closestIndex1]);
   }
 
-  // once we've also calculated the timestep
   for (int j=0; j<NumberOfBodies; j++){
     // update position and velocity of body
     for (int k=0; k<3; k++){
@@ -382,15 +403,16 @@ void updateBodies(Body* bodies) {
       bodies[j].nv[k] = bodies[j].v[k] + (timestep * (bodies[j].force[k] / bodies[j].mass));
     }
     bodies[j].nm = bodies[j].mass;
-  }
-
-  for (int j=0; j<NumberOfBodies; j++){
-    // make every space body assign their new values.
     bodies[j].assignNewValues();
   }
+
   // check for any collisions
   // if theres collisions, then make new body and remove the collided bodies
+  int BeforeBodyCount = NumberOfBodies;
   checkCollision(bodies, collisions, collisionPairCount);
+  if ((BeforeBodyCount - NumberOfBodies) != 0){
+    countWrite(std::to_string(t) + "," + std::to_string(NumberOfBodies) + "\n");
+  }
   // increment the current time with the time step.
   t += timestep;
   // std::cout << "\x1B[2J\x1B[H";
@@ -423,6 +445,8 @@ int performSpaceBodies(Body* bodies){
 
   int timeStepsSinceLastPlot = 0;
   const int plotEveryKthStep = 100;
+  countWrite("Time, Number of Bodies\n");
+  countWrite(std::to_string(t) + "," + std::to_string(NumberOfBodies) + "\n");
   while (t<=tFinal) {
     updateBodies(bodies);
     timeStepsSinceLastPlot++;
@@ -519,5 +543,8 @@ int main(int argc, char** argv) {
   } else {
     runRandomBodies();
   }
+  // Close the files that were opened in memory.
+  if (isCsvBodyCountWrite){csvBodyCountFile.close();}
+  if (isCsvCollisionWrite){csvCollisionFile.close();}
   return 0;
 }
