@@ -26,8 +26,7 @@
 double t = 0;
 double tFinal = 0;
 bool adaptiveTimeStepCheck = true;
-double defaultTimeStepSize = 0.000001;
-double smallestDiffCoefficent = 100;
+double defaultTimeStepSize = 0.001;
 int NumberOfBodies = 0;
 double smallSizeLimit = 1e-8;
 
@@ -79,7 +78,7 @@ class Body {
     void print(int bodyID){
       // literally prints body statistics.
       // Values are (ID, x,y,z, v(x), v(y), v(z), mass)
-      printf("Body %4d: %+010.5f  %+010.5f  %+010.5f  %+010.5f  %+010.5f  %+010.5f  %+010.5f \n",
+      printf("Body %4d: %+010.6f  %+010.6f  %+010.6f  %+010.6f  %+010.6f  %+010.6f  %+010.6f \n",
         bodyID, x[0], x[1], x[2], v[0], v[1], v[2], mass);
     }
 };
@@ -244,7 +243,6 @@ void checkCollision(Body b[]){
           positions[collisionPairCount][0] = i;
           positions[collisionPairCount][1] = j;
           collisionPairCount++;
-
         }
       }
     }
@@ -331,45 +329,69 @@ void setUp(int argc, char** argv, Body* b) {
 // TODO
 double updateTimeStep(double beforeTS, Body a, Body b){
 
-  double distance = sqrt(
+  double currentDistance = sqrt(
     (b.x[0]-a.x[0]) * (b.x[0]-a.x[0]) +
     (b.x[1]-a.x[1]) * (b.x[1]-a.x[1]) +
     (b.x[2]-a.x[2]) * (b.x[2]-a.x[2])
   );
 
-  // the template code uses a fixed time step.
-  // Augment the code such that an appropriate time step size
-  // is chosen and no collisions are left out, i.e. bodies
-  // do not fly through each other.
-
   double timestep = beforeTS;
-  // std::cerr << "old timestep:" << timestep << std::endl;
+  
   // check if that timestep is tiny.
 
   // we have a distance that is quite small.
   // we need to see whether the new distance will collide with them or go past them
+  // get the timestep and guess a new distance that would be at least 1/4 and at most 1/2 the current distance between them.
 
   // is the timestep too small? (your cap is 1e^-10)
+
+
+  // if (currentDistance < 1){
+  //   double newAX[3];
+  //   double newBX[3];
+  //   double newDist;
+  //   bool notWithinRegion = true;
+
+
+  //   for (int i = 0; i < 3; i++){
+  //     newAX[i] = (0.0000001 * a.v[i]) + a.x[i];
+  //     newBX[i] = (0.0000001 * b.v[i]) + b.x[i];
+  //   }
+  //   newDist = sqrt(
+  //     (newBX[0]-newAX[0]) * (newBX[0]-newAX[0]) +
+  //     (newBX[1]-newAX[1]) * (newBX[1]-newAX[1]) +
+  //     (newBX[2]-newAX[2]) * (newBX[2]-newAX[2])
+  //   );
+  //   if(newDist - currentDistance > 0){
+  //     // if they're going further away then we don't need to bother about it.
+  //     notWithinRegion = false;
+  //   }
+
+  //   // if they are within the region:
+  //   while (notWithinRegion){
+  //     timestep = timestep / 2;
+  //     std::cerr << " Timestep halved:  "<<timestep<< std::endl;
+  //     for (int i = 0; i < 3; i++){
+  //       newAX[i] = (timestep * a.v[i]) + a.x[i];
+  //       newBX[i] = (timestep * b.v[i]) + b.x[i];
+  //     }
+  //     newDist = sqrt(
+  //       (newBX[0]-newAX[0]) * (newBX[0]-newAX[0]) +
+  //       (newBX[1]-newAX[1]) * (newBX[1]-newAX[1]) +
+  //       (newBX[2]-newAX[2]) * (newBX[2]-newAX[2])
+  //     );
+  //     std::cerr << " New Dist:  "<<newDist << ", " << currentDistance << std::endl;
+      
+
+  //     notWithinRegion = ((newDist / currentDistance) > 0.3);
+  //     notWithinRegion = ((newDist / currentDistance) < 0.4);
+
+  //     // notWithinRegion = (newDist * 2 <= currentDistance);
+  //   }
+
+    // get the current value and see if we can get it to half the distance
+  // }
   if (timestep >= smallSizeLimit){
-    // calculate the angle of their current bodies velocities
-    // guestimate the body's new positions using vt + s = ns
-    // see if they would collide with each other or zoom past.
-    // if they zoom past and the trajectory of the bodies angles are within each other
-    // reduce the time and start again.
-      // Body newA;
-      // Body newB;
-      // // calculate the next distance with the current timestep
-      // for (int k = 0; k < 3; k++){
-      //   newA.x[k] = a.x[k] + (timestep * a.v[k]);
-      //   newA.v[k] = a.v[k] + (timestep * (a.force[k] / a.mass));
-      //   newB.x[k] = b.x[k] + (timestep * b.v[k]);
-      //   newB.v[k] = b.v[k] + (timestep * (a.force[k] / b.mass));
-      // }
-      // double nextDistance = sqrt(
-      //   (newB.x[0]-newA.x[0]) * (newB.x[0]-newA.x[0]) +
-      //   (newB.x[1]-newA.x[1]) * (newB.x[1]-newA.x[1]) +
-      //   (newB.x[2]-newA.x[2]) * (newB.x[2]-newA.x[2])
-      // );
 
       double EPS = 1e-8;
       for (int i = 0; i < 3; i++){
@@ -378,14 +400,6 @@ double updateTimeStep(double beforeTS, Body a, Body b){
           timestep = timestep/2;
         } 
       }
-
-      // ideally we'd like the new distance to be within the parameters of the old distance.
-      // is that distance too much?
-        // reduce
-      // else
-        // reduce the distance and try again
-
-      // calculate the new position
   }
   return timestep;
 }
@@ -395,12 +409,14 @@ void updateBodies(Body* bodies) {
   printf ("\n\nTime: %4.8f, NumberOfBodies: %1.0d \n", t, NumberOfBodies);
   double timestep = defaultTimeStepSize;
 
+  // initiate positions of the shortest body positions
+  double closestDistance = 999999;
+  int closestIndex1 = 0;
+  int closestIndex2 = 0;
+
   for (int j=0; j<NumberOfBodies; j++) {
     // now we can print the position of the space body
     bodies[j].print(j);
-    // initiate positions of the shortest body positions
-    double closestDistance = 999999;
-    int closestIndex = 0;
 
     for (int i=0; i<NumberOfBodies; i++) {
       if (i != j){ // make sure it doesn't interact with itself.
@@ -414,13 +430,15 @@ void updateBodies(Body* bodies) {
         // check if this is the closest body to date
         if (closestDistance > distance){
           closestDistance = distance;
-          closestIndex = i;
+          closestIndex1 = i;
+          closestIndex2 = j;
         }
 
         // calculate combined mass
         double combinedMass = bodies[i].mass * bodies[j].mass;
 
         // update force values (for x,y,z)
+        // explicit euler to predict velocity
         double calc1 = (bodies[j].x[0]-bodies[i].x[0]);
         double calc2 = (bodies[j].x[1]-bodies[i].x[1]);
         double calc3 = (bodies[j].x[2]-bodies[i].x[2]);
@@ -442,13 +460,13 @@ void updateBodies(Body* bodies) {
     // bodies[j].printForce();
     // bodies[j].resetForce();
     // bodies[j].printForce();
-
-    if (adaptiveTimeStepCheck == true){
-      // update timestep if needed
-      timestep = updateTimeStep(timestep, bodies[j], bodies[closestIndex]);
-    }
-    //  std::cerr << " Timestep:  "<<timestep<< std::endl;
   }
+
+  if (adaptiveTimeStepCheck == true){
+    // update timestep if needed
+    timestep = updateTimeStep(timestep, bodies[closestIndex2], bodies[closestIndex1]);
+  }
+  //  std::cerr << " Timestep:  "<<timestep<< std::endl;
 
   // once we've also calculated the timestep
   for (int j=0; j<NumberOfBodies; j++){
@@ -457,6 +475,8 @@ void updateBodies(Body* bodies) {
       // update the position and velocity of the body.
       // std::cerr << "Timestep :  "<<timestep<< std::endl;
       // std::cerr << (timestep * bodies[j].v[k]) <<", "<< (timestep * (bodies[j].force[k] / bodies[j].mass))<< std::endl;
+
+      // explicit euler to predict velocity
       bodies[j].nx[k] = bodies[j].x[k] + (timestep * bodies[j].v[k]);
       bodies[j].nv[k] = bodies[j].v[k] + (timestep * (bodies[j].force[k] / bodies[j].mass));
     }
