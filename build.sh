@@ -16,5 +16,8 @@ g++ -O3 --std=c++11 spacebodies.cpp -o build/spacebodies
 # collisions
 # ./build/spacebodies 0.002  \ 0.00001 0.0 0.0 -0.10001 0.0 0.0 5.0 \ -0.00001 0.0 0.0 0.1 0.0 0.0 5.0
 
-# collisions
-./build/spacebodies 1 \ 1.2 1.2 1.2 -2.5 -2.5 -2.5 100.0 \ -2.1 -2.1 -2.1 +2.5 +2.5 +2.5 100.2
+# collisions (floating point positions)
+# ./build/spacebodies 0.4201101 \ 0.5 0.5 0.5 -2.5 -2.5 -2.5 100.0 \ -1.6 -1.6 -1.6 +2.5 +2.5 +2.5 100.2
+
+# collisions (whole)
+./build/spacebodies 0.401 \ 1 0.0 0.0 -2.5 0.0 0.0 100.0 \ -1 0.0 0.0 +2.5 0.0 0.0 100.0

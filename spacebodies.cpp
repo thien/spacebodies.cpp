@@ -27,8 +27,8 @@
 // setup variables
 double t = 0;
 double tFinal = 0;
-bool adaptiveTimeStepCheck = false;
-double defaultTimeStepSize = 0.3;
+bool adaptiveTimeStepCheck = true;
+double defaultTimeStepSize = 0.0001;
 int NumberOfBodies = 0;
 double smallSizeLimit = 1e-8;
 
@@ -274,7 +274,7 @@ double updateTimeStep(double beforeTS, Body a, Body b, double currentDistance){
   // if its too small don't change the timestep or we'll get nowhere.
   if (timestep > smallSizeLimit){
     // if the smallest distance is small enough we'll update the timestep to accomadate it.
-    if (currentDistance < 1){
+    if (currentDistance < 0.01){
       // placeholder values to estimate future positions
       double newAX[3];
       double newBX[3];
@@ -292,21 +292,30 @@ double updateTimeStep(double beforeTS, Body a, Body b, double currentDistance){
         (newBX[1]-newAX[1]) * (newBX[1]-newAX[1]) +
         (newBX[2]-newAX[2]) * (newBX[2]-newAX[2])
       );
-      if(newDist - currentDistance > 0){
+      if((newDist - currentDistance) * 1e7 > 0){
         // if they're going further away then we don't need to bother about it.
+        //  std::cerr << "They're getting away" << std::endl;
         areTheyGettingCloser = false;
-        timestep = timestep * timestep;
+        // timestep = timestep * timestep;
       }
 
       bool badDistanceRatio = areTheyGettingCloser;
-
+      
+      // std::cerr << "P1:  "<<newDist<<" P2: "<< currentDistance << " DIFF: "<< (newDist - currentDistance) << ", Getting Closer:" << areTheyGettingCloser << std::endl;
+      
       // if they are within the region, then we adjust the timestep
       // so that the future step would be a fraction of the distance
       // they just covered.
       while (badDistanceRatio){
         // reduce the timestep.
-        timestep = timestep / 2;
-        std::cerr << " Timestep halved:  "<<timestep<< std::endl;
+        timestep = timestep / 10;
+        // std::cerr << " Timestep halved:  "<<timestep<< std::endl;
+        
+        // if this timestep is small enough; fuck it we'll do it live
+        if (timestep < smallSizeLimit){
+          badDistanceRatio = false;
+          break;
+        }
 
         // calculate the next distance.
         for (int i = 0; i < 3; i++){
@@ -318,16 +327,18 @@ double updateTimeStep(double beforeTS, Body a, Body b, double currentDistance){
           (newBX[1]-newAX[1]) * (newBX[1]-newAX[1]) +
           (newBX[2]-newAX[2]) * (newBX[2]-newAX[2])
         );
-        std::cerr << " New Dist:  "<<newDist << ", " << currentDistance << std::endl;
+        // std::cerr << " New Dist:  "<<newDist << ", OG: " << currentDistance << std::endl;
         
         // they could actually collide at this stage; lets check for that first.
         if (newDist <= smallSizeLimit){
+          // std::cerr << "YES!" << std::endl;
           // break the loop, we have a perfect score.
           badDistanceRatio = false;
         } else {
           // we want the new distance to be around 1/3 to 1/2 of the distance they will cover.
-          badDistanceRatio = ((newDist / currentDistance) < 0.5);
-          badDistanceRatio = ((newDist / currentDistance) > 0.3);
+          // std::cerr << "Whats the ratio mr wolf?" << ((newDist-currentDistance)/currentDistance) << std::endl;
+          badDistanceRatio = (((newDist-currentDistance) / currentDistance) < 0.2);
+          // badDistanceRatio = ((newDist / currentDistance) > 0.3);
         }
       }
     }
@@ -425,6 +436,7 @@ void updateBodies(Body* bodies) {
   // if theres collisions, then make new body and remove the collided bodies
   int BeforeBodyCount = NumberOfBodies;
   checkCollision(bodies, collisions, collisionPairCount);
+
 
   // write to csv the number of bodies at this state.
   if ((BeforeBodyCount - NumberOfBodies) != 0){
