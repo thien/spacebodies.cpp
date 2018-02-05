@@ -28,7 +28,7 @@
 double t = 0;
 double tFinal = 0;
 bool adaptiveTimeStepCheck = true;
-double defaultTimeStepSize = 0.00001;
+double defaultTimeStepSize = 0.000001;
 int NumberOfBodies = 0;
 double smallSizeLimit = 1e-8;
 
@@ -93,6 +93,16 @@ class Body {
       // Values are (ID, x,y,z, v(x), v(y), v(z), mass)
       printf("Body %4d: %+010.6f  %+010.6f  %+010.6f  %+010.6f  %+010.6f  %+010.6f  %+010.6f \n",
         bodyID, x[0], x[1], x[2], v[0], v[1], v[2], mass);
+      // if we have to write it on the csv, then call that!
+      if (isCsvCollisionWrite){
+        collisionWrite(std::to_string(x[0])+",");
+        collisionWrite(std::to_string(x[1])+",");
+        collisionWrite(std::to_string(x[2])+",");
+        collisionWrite(std::to_string(v[0])+",");
+        collisionWrite(std::to_string(v[1])+",");
+        collisionWrite(std::to_string(v[2])+",");
+        collisionWrite(std::to_string(mass)+",");
+      }
     }
 };
 
@@ -260,7 +270,6 @@ double updateTimeStep(double beforeTS, Body a, Body b, double currentDistance){
 
   // is the timestep too small? (your cap is 1e^-10)
 
-  // double a_para = (a.x[0] * a.x[0] + a.x[1] * a.x[1] + a.x[2] * a.x[2]);
 
   // if its too small don't change the timestep or we'll get nowhere.
   if (timestep > smallSizeLimit){
@@ -337,7 +346,7 @@ double updateTimeStep(double beforeTS, Body a, Body b, double currentDistance){
 // function that updates the positions of the particles in space
 void updateBodies(Body* bodies) {
   printf ("\n\nTime: %4.8f, NumberOfBodies: %1.0d \n", t, NumberOfBodies);
-  collisionWrite(std::to_string(t) + "\n");
+  collisionWrite(std::to_string(t) + ",");
   double timestep = defaultTimeStepSize;
 
   // initiate positions of the shortest body positions
@@ -389,6 +398,7 @@ void updateBodies(Body* bodies) {
     bodies[j].capForceLimit();
   }
 
+  collisionWrite(std::to_string(closestDistance) + "\n");
   if (adaptiveTimeStepCheck == true){
     // update timestep if needed to accomadate the smallest distnace
     timestep = updateTimeStep(timestep, bodies[closestIndex2], bodies[closestIndex1], closestDistance);
@@ -446,6 +456,14 @@ int verifyArguments(int argc, char** argv){
 // Starts the space body simulatiions.
 int performSpaceBodies(Body* bodies){
   std::cerr << "Performing Space Bodies" << std::endl;
+
+  if (isCsvCollisionWrite){
+    // write header for csv if enabled
+    collisionWrite("Timestep,");
+    collisionWrite("ax,ay,az,avx,avy,avz,a_mass,");
+    collisionWrite("bx,by,bz,bvx,bvy,bvz,b_mass,");
+    collisionWrite("distance\n");
+  }
 
   int timeStepsSinceLastPlot = 0;
   const int plotEveryKthStep = 100;
