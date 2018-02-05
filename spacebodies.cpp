@@ -249,14 +249,7 @@ void setUp(int argc, char** argv, Body* b) {
 }
 
 // TODO
-double updateTimeStep(double beforeTS, Body a, Body b){
-
-  double currentDistance = sqrt(
-    (b.x[0]-a.x[0]) * (b.x[0]-a.x[0]) +
-    (b.x[1]-a.x[1]) * (b.x[1]-a.x[1]) +
-    (b.x[2]-a.x[2]) * (b.x[2]-a.x[2])
-  );
-
+double updateTimeStep(double beforeTS, Body a, Body b, double currentDistance){
   double timestep = beforeTS;
   
   // check if that timestep is tiny.
@@ -267,61 +260,76 @@ double updateTimeStep(double beforeTS, Body a, Body b){
 
   // is the timestep too small? (your cap is 1e^-10)
 
+  // double a_para = (a.x[0] * a.x[0] + a.x[1] * a.x[1] + a.x[2] * a.x[2]);
 
-  // if (currentDistance < 1){
-  //   double newAX[3];
-  //   double newBX[3];
-  //   double newDist;
-  //   bool notWithinRegion = true;
+  // if its too small don't change the timestep or we'll get nowhere.
+  if (timestep > smallSizeLimit){
+    // if the smallest distance is small enough we'll update the timestep to accomadate it.
+    if (currentDistance < 1){
+      // placeholder values to estimate future positions
+      double newAX[3];
+      double newBX[3];
+      double newDist;
+      bool areTheyGettingCloser = true;
+      double microStep = 1e-7;
 
-
-  //   for (int i = 0; i < 3; i++){
-  //     newAX[i] = (0.0000001 * a.v[i]) + a.x[i];
-  //     newBX[i] = (0.0000001 * b.v[i]) + b.x[i];
-  //   }
-  //   newDist = sqrt(
-  //     (newBX[0]-newAX[0]) * (newBX[0]-newAX[0]) +
-  //     (newBX[1]-newAX[1]) * (newBX[1]-newAX[1]) +
-  //     (newBX[2]-newAX[2]) * (newBX[2]-newAX[2])
-  //   );
-  //   if(newDist - currentDistance > 0){
-  //     // if they're going further away then we don't need to bother about it.
-  //     notWithinRegion = false;
-  //   }
-
-  //   // if they are within the region:
-  //   while (notWithinRegion){
-  //     timestep = timestep / 2;
-  //     std::cerr << " Timestep halved:  "<<timestep<< std::endl;
-  //     for (int i = 0; i < 3; i++){
-  //       newAX[i] = (timestep * a.v[i]) + a.x[i];
-  //       newBX[i] = (timestep * b.v[i]) + b.x[i];
-  //     }
-  //     newDist = sqrt(
-  //       (newBX[0]-newAX[0]) * (newBX[0]-newAX[0]) +
-  //       (newBX[1]-newAX[1]) * (newBX[1]-newAX[1]) +
-  //       (newBX[2]-newAX[2]) * (newBX[2]-newAX[2])
-  //     );
-  //     std::cerr << " New Dist:  "<<newDist << ", " << currentDistance << std::endl;
-      
-
-  //     notWithinRegion = ((newDist / currentDistance) > 0.3);
-  //     notWithinRegion = ((newDist / currentDistance) < 0.4);
-
-  //     // notWithinRegion = (newDist * 2 <= currentDistance);
-  //   }
-
-    // get the current value and see if we can get it to half the distance
-  // }
-  if (timestep >= smallSizeLimit){
-
-      double EPS = 1e-8;
+      // lets see if the bodies are getting closer or going away.
       for (int i = 0; i < 3; i++){
-
-        if (a.v[i] > 0 and (abs(timestep * a.force[0]/a.mass)/a.v[0] > EPS)){
-          timestep = timestep/2;
-        } 
+        newAX[i] = (microStep * a.v[i]) + a.x[i];
+        newBX[i] = (microStep * b.v[i]) + b.x[i];
       }
+      newDist = sqrt(
+        (newBX[0]-newAX[0]) * (newBX[0]-newAX[0]) +
+        (newBX[1]-newAX[1]) * (newBX[1]-newAX[1]) +
+        (newBX[2]-newAX[2]) * (newBX[2]-newAX[2])
+      );
+      if(newDist - currentDistance > 0){
+        // if they're going further away then we don't need to bother about it.
+        areTheyGettingCloser = false;
+      }
+
+      bool badDistanceRatio = areTheyGettingCloser;
+
+      // if they are within the region, then we adjust the timestep
+      // so that the future step would be a fraction of the distance
+      // they just covered.
+      while (badDistanceRatio){
+        // reduce the timestep.
+        timestep = timestep / 2;
+        std::cerr << " Timestep halved:  "<<timestep<< std::endl;
+
+        // calculate the next distance.
+        for (int i = 0; i < 3; i++){
+          newAX[i] = (timestep * a.v[i]) + a.x[i];
+          newBX[i] = (timestep * b.v[i]) + b.x[i];
+        }
+        newDist = sqrt(
+          (newBX[0]-newAX[0]) * (newBX[0]-newAX[0]) +
+          (newBX[1]-newAX[1]) * (newBX[1]-newAX[1]) +
+          (newBX[2]-newAX[2]) * (newBX[2]-newAX[2])
+        );
+        std::cerr << " New Dist:  "<<newDist << ", " << currentDistance << std::endl;
+        
+        // they could actually collide at this stage; lets check for that first.
+        if (newDist <= smallSizeLimit){
+          // break the loop, we have a perfect score.
+          badDistanceRatio = false;
+        } else {
+          // we want the new distance to be around 1/3 to 1/2 of the distance they will cover.
+          badDistanceRatio = ((newDist / currentDistance) > 0.3);
+          badDistanceRatio = ((newDist / currentDistance) < 0.5);
+        }
+      }
+    }
+
+    // vanilla adaptive timestepping method; for use when everything else fails
+    // double EPS = 1e-8;
+    // for (int i = 0; i < 3; i++){
+
+    //   if (a.v[i] > 0 and (abs(timestep * a.force[0]/a.mass)/a.v[0] > EPS)){
+    //     timestep = timestep/2;
+    //   } 
+    // }
   }
   return timestep;
 }
@@ -341,7 +349,6 @@ void updateBodies(Body* bodies) {
   int collisionPairCount = 0;
   
   for (int j=0; j<NumberOfBodies; j++) {
-    // now we can print the position of the space body
     bodies[j].print(j);
     // only calculate half the calculations!
     for (int i=0; i<j; i++) {
@@ -373,8 +380,8 @@ void updateBodies(Body* bodies) {
         double calc4 = calc5/combinedMass;
         // std::cerr <<"D: "<<distance << " C1:  "<<calc1 <<", C2: "<<calc2 <<", C3: "<<calc3 <<", C4: "<<calc4 <<", C5: "<<calc5 << std::endl;
         for (int k = 0; k < 3; k++){
-          bodies[j].force[k] += abs(bodies[i].x[k]-bodies[j].x[k]) * calc4;
           bodies[i].force[k] += abs(bodies[i].x[k]-bodies[j].x[k]) * calc4;
+          bodies[j].force[k] += abs(bodies[i].x[k]-bodies[j].x[k]) * calc4;
         }
       }
     }
@@ -384,7 +391,7 @@ void updateBodies(Body* bodies) {
 
   if (adaptiveTimeStepCheck == true){
     // update timestep if needed to accomadate the smallest distnace
-    timestep = updateTimeStep(timestep, bodies[closestIndex2], bodies[closestIndex1]);
+    timestep = updateTimeStep(timestep, bodies[closestIndex2], bodies[closestIndex1], closestDistance);
   }
 
   for (int j=0; j<NumberOfBodies; j++){
@@ -407,6 +414,7 @@ void updateBodies(Body* bodies) {
   if ((BeforeBodyCount - NumberOfBodies) != 0){
     countWrite(std::to_string(t) + "," + std::to_string(NumberOfBodies) + "\n");
   }
+
 
   // increment the current time with the time step.
   t += timestep;

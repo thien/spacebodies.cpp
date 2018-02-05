@@ -17,4 +17,4 @@ g++ -O3 --std=c++11 spacebodies.cpp -o build/spacebodies
 # ./build/spacebodies 0.002  \ 0.00001 0.0 0.0 -0.10001 0.0 0.0 5.0 \ -0.00001 0.0 0.0 0.1 0.0 0.0 5.0
 
 # collisions
-./build/spacebodies 4.05 \ 2 0.0 0.0 -2.5 0.0 0.0 5.0 \ -5 0.0 0.0 +2.5 0.0 0.0 5.0
+./build/spacebodies 0.401 \ 1 0.0 0.0 -2.5 0.0 0.0 100.0 \ -1 0.0 0.0 +2.5 0.0 0.0 100.1
