@@ -27,14 +27,14 @@
 // setup variables
 double t = 0;
 double tFinal = 0;
-bool adaptiveTimeStepCheck = true;
-double defaultTimeStepSize = 0.000001;
+bool adaptiveTimeStepCheck = false;
+double defaultTimeStepSize = 0.3;
 int NumberOfBodies = 0;
 double smallSizeLimit = 1e-8;
 
 // writer variables
 bool isCsvBodyCountWrite = false; // if true, will write a csv that counts the number of bodies over time.
-bool isCsvCollisionWrite = false; // if set to true, it will generate a csv of two bodies and data to show their collision.
+bool isCsvCollisionWrite = true; // if set to true, it will generate a csv of two bodies and data to show their collision.
 
 std::ofstream csvBodyCountFile ("bodycount.csv");
 std::ofstream csvCollisionFile ("collision.csv");
@@ -295,6 +295,7 @@ double updateTimeStep(double beforeTS, Body a, Body b, double currentDistance){
       if(newDist - currentDistance > 0){
         // if they're going further away then we don't need to bother about it.
         areTheyGettingCloser = false;
+        timestep = timestep * timestep;
       }
 
       bool badDistanceRatio = areTheyGettingCloser;
@@ -325,8 +326,8 @@ double updateTimeStep(double beforeTS, Body a, Body b, double currentDistance){
           badDistanceRatio = false;
         } else {
           // we want the new distance to be around 1/3 to 1/2 of the distance they will cover.
-          badDistanceRatio = ((newDist / currentDistance) > 0.3);
           badDistanceRatio = ((newDist / currentDistance) < 0.5);
+          badDistanceRatio = ((newDist / currentDistance) > 0.3);
         }
       }
     }
@@ -398,7 +399,12 @@ void updateBodies(Body* bodies) {
     bodies[j].capForceLimit();
   }
 
-  collisionWrite(std::to_string(closestDistance) + "\n");
+  if (closestDistance == 999999){
+    // there's only one object in space.
+    collisionWrite("-\n");
+  } else {
+    collisionWrite(std::to_string(closestDistance) + "\n");
+  }
   if (adaptiveTimeStepCheck == true){
     // update timestep if needed to accomadate the smallest distnace
     timestep = updateTimeStep(timestep, bodies[closestIndex2], bodies[closestIndex1], closestDistance);
