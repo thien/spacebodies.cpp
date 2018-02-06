@@ -19,20 +19,22 @@
 #include <cstdlib>
 #include <math.h>
 #include <unordered_map>
-// library to include writer
 #include <fstream>
 
 
 // CONFIGS
-double defaultTimeStepSize = 0.00001; 
+// double defaultTimeStepSize = 0.00000009765625; 
+double defaultTimeStepSize = 0.00000001;
 double smallSizeLimit = 1e-8; // If variables are smaller than this then it might as well be zero.
-bool adaptiveTimeStepCheck = true; // If true, then use adaptive timestep
+bool adaptiveTimeStepCheck = false; // If true, then use adaptive timestep
 bool isCollided = false; // this is a one way boolean; if turned on then it will not come back!
 bool useParaview = false; // if true, write paraview related files.
 // writer variables
 bool isCsvBodyCountWrite = false; // if true, will write a csv that counts the number of bodies over time.
 bool isCsvCollisionWrite = true; // if set to true, it will generate a csv of two bodies and data to show their collision.
-
+bool collisionIterate = true; // iterates through multiple rounds, halving the timestep size as it goes.
+bool printBodiesInfo = false; // prints the bodies and their data
+bool printTimestampInfo = false;// print timestamp if true
 
 // SETUP VARIABLES-------------------------------
   double t = 0;
@@ -68,6 +70,18 @@ bool isCsvCollisionWrite = true; // if set to true, it will generate a csv of tw
       double nv[3];  // future velocity of body
       double nm;   // future body mass
 
+
+      void reset(){
+        for (int i = 0; i < 3; i++){
+          force[i] = 0;
+          x[i] = 0;
+          v[i] = 0;
+          nx[i] = 0;
+          nv[i] = 0;
+        }
+        mass = 0;
+        nm = 0;
+      }
       void assignNewValues(){
         // assigns future values to be current values.
         for (int i = 0; i < 3; i++) {
@@ -85,7 +99,8 @@ bool isCsvCollisionWrite = true; // if set to true, it will generate a csv of tw
       }
 
       void printForce(){
-        std::cerr << "    Force:  "<<force[0]<< ", "<<force[1]<< ", "<<force[2]<<std::endl;
+        // std::cout << "    Force:  "<<force[0]<< ", "<<force[1]<< ", "<<force[2]<<std::endl;
+        printf("Force: %+020.15f, %+020.15f, %+020.15f \n", force[0],force[1],force[2]);
       }
 
       void resetForce(){
@@ -95,16 +110,26 @@ bool isCsvCollisionWrite = true; // if set to true, it will generate a csv of tw
       void print(int bodyID){
         // literally prints body statistics.
         // Values are (ID, x,y,z, v(x), v(y), v(z), mass)
-        printf("Body %4d: %+010.6f  %+010.6f  %+010.6f  %+010.6f  %+010.6f  %+010.6f  %+010.6f \n",
-          bodyID, x[0], x[1], x[2], v[0], v[1], v[2], mass);
+        if (printBodiesInfo){
+          printf("Body %4d: %+010.6f  %+010.6f  %+010.6f  %+010.6f  %+010.6f  %+010.6f  %+010.6f \n", bodyID, x[0], x[1], x[2], v[0], v[1], v[2], mass);
+        }
       }
   };
 
 
 void collisionDebug(double timestep, Body a, Body b){
   if (isCsvCollisionWrite){
-    double pos = abs(((b.x[0]-a.x[0])+(b.x[1]-a.x[1])+(b.x[2]-a.x[2]))/6);
-    std::cerr << timestep << ": " << a.x[0] << ", " << a.x[1] << ", " << a.x[2] << ", POS: " << pos << std::endl;
+    double pos = abs(a.x[0]);
+    
+    std::ostringstream strs;
+    strs << pos;
+    std::string errStr = strs.str();
+    std::ostringstream str2;
+    strs << timestep;
+    std::string ts = strs.str();
+
+    std::cout << "COLLISION @ "<< t<<", Timestep: "<< timestep << ": Pos: " << a.x[0] << std::endl;
+    collisionWrite(ts+ "," + errStr + "\n");
   }
 }
 
@@ -168,11 +193,11 @@ void collisionDebug(double timestep, Body a, Body b){
     z.mass = x.mass + y.mass;
     for (int i; i < 3; i++){
       // get position of one of the colluded bodies
-      z.x[i] = x.x[i];
+      z.x[i] = (x.x[i] + x.x[i]) / 2;
       // calculate velocity of new item. (Mass averaged velocities)
-      // std::cerr << "V"<<i<<": "<< z.v[i] << std::endl;
+      // std::cout << "V"<<i<<": "<< z.v[i] << std::endl;
       z.v[i] = (x.v[i]/x.mass) + (y.v[i]/y.mass);
-      // std::cerr << "V"<<i<<": "<< z.v[i] << std::endl;
+      // std::cout << "V"<<i<<": "<< z.v[i] << std::endl;
     }
     return z;
   }
@@ -243,7 +268,7 @@ void collisionDebug(double timestep, Body a, Body b){
       b[i].mass = std::stof(argv[readArgument]); readArgument++;
 
       if (b[i].mass <= 0.0) {
-        std::cerr << "invalid mass for body " << i << std::endl;
+        std::cout << "invalid mass for body " << i << std::endl;
         exit(-2);
       }
       printf("Body %5.0d \t %4.2f %4.2f %4.2f %4.2f %4.2f %4.2f %4.2f \n", i, b[i].x[0], b[i].x[1], b[i].x[2], b[i].v[0], b[i].v[1], b[i].v[2], b[i].mass);
@@ -328,7 +353,13 @@ void collisionDebug(double timestep, Body a, Body b){
 
   // function that updates the positions of the particles in space
   void updateBodies(Body* bodies) {
-    printf ("\n\nTime: %4.8f, NumberOfBodies: %1.0d \n", t, NumberOfBodies);
+    if (printBodiesInfo){
+      printf("\n\n"); 
+    }
+    if (printTimestampInfo){
+      printf ("Time: %4.8f, NumberOfBodies: %1.0d \n", t, NumberOfBodies);
+    }
+
     double timestep = defaultTimeStepSize;
 
     // initiate positions of the shortest body positions
@@ -339,48 +370,46 @@ void collisionDebug(double timestep, Body a, Body b){
     int collisions[NumberOfBodies][2];
     int collisionPairCount = 0;
     
-    for (int j=0; j<NumberOfBodies; j++) {
-      bodies[j].print(j);
+    for (int i=0; i<NumberOfBodies; i++) {
+      bodies[i].print(i);
       // only calculate half the calculations!
-      for (int i=0; i<j; i++) {
+      for (int j=0; j<i; j++) {
         if (i != j){ // make sure it doesn't interact with itself.
           // calculate distance
           double distance = sqrt(
-            (bodies[j].x[0]-bodies[i].x[0]) * (bodies[j].x[0]-bodies[i].x[0]) +
-            (bodies[j].x[1]-bodies[i].x[1]) * (bodies[j].x[1]-bodies[i].x[1]) +
-            (bodies[j].x[2]-bodies[i].x[2]) * (bodies[j].x[2]-bodies[i].x[2])
+            (bodies[i].x[0]-bodies[j].x[0]) * (bodies[i].x[0]-bodies[j].x[0]) +
+            (bodies[i].x[1]-bodies[j].x[1]) * (bodies[i].x[1]-bodies[j].x[1]) +
+            (bodies[i].x[2]-bodies[j].x[2]) * (bodies[i].x[2]-bodies[j].x[2])
           );
           // have they collided?
-          if (distance <= smallSizeLimit){
-            isCollided = true;
-            collisionDebug(timestep, bodies[j], bodies[i]);
+            if (distance <= smallSizeLimit){
+              isCollided = true;
+              collisionDebug(timestep, bodies[i], bodies[j]);
 
-            // Collision means the bodies are closer than 1e-8.
-            collisions[collisionPairCount][0] = i;
-            collisions[collisionPairCount][1] = j;
-            collisionPairCount++;
-          } else {
-            // check if this is the closest body to date
-            if (closestDistance > distance){
-              closestDistance = distance;
-              closestPair1 = i;
-              closestPair2 = j;
+              // Collision means the bodies are closer than 1e-8.
+              collisions[collisionPairCount][0] = i;
+              collisions[collisionPairCount][1] = j;
+              collisionPairCount++;
+            } else {
+              // check if this is the closest body to date
+              if (closestDistance > distance){
+                closestDistance = distance;
+                closestPair1 = i;
+                closestPair2 = j;
+              }
             }
-          }
           // calculate combined mass
-          double combinedMass = bodies[i].mass * bodies[j].mass;
-          // update force values (for x,y,z)
-          double calc5 = distance/distance/distance;
-          double calc4 = calc5/combinedMass;
-
+          double calc4 = bodies[i].mass*bodies[j].mass/distance/distance/distance;
+          
+          // std::cout << "Force: " << calc4*distance << std::endl;
           for (int k = 0; k < 3; k++){
-            bodies[i].force[k] += abs(bodies[i].x[k]-bodies[j].x[k]) * calc4;
-            bodies[j].force[k] += abs(bodies[i].x[k]-bodies[j].x[k]) * calc4;
+            bodies[i].force[k] += (bodies[j].x[k]-bodies[i].x[k]) * calc4;
+            bodies[j].force[k] += (bodies[i].x[k]-bodies[j].x[k]) * calc4;
           }
         }
       }
       // check if the force is too small; if it is set it to 0.
-      bodies[j].capForceLimit();
+      // bodies[i].capForceLimit();
     }
 
     if (adaptiveTimeStepCheck == true){
@@ -390,6 +419,7 @@ void collisionDebug(double timestep, Body a, Body b){
 
     for (int j=0; j<NumberOfBodies; j++){
       // update position and velocity of body
+      // bodies[j].printForce();
       for (int k=0; k<3; k++){
         // update the position and velocity of the body.
         bodies[j].nx[k] = bodies[j].x[k] + (timestep * bodies[j].v[k]);
@@ -419,7 +449,7 @@ void collisionDebug(double timestep, Body a, Body b){
   // check if the arguments are valid
   int verifyArguments(int argc, char** argv){
     if (argc==1) {
-      std::cerr << "please add the final time plus a list of object configurations as tuples px py pz vx vy vz m" << std::endl
+      std::cout << "please add the final time plus a list of object configurations as tuples px py pz vx vy vz m" << std::endl
                 << std::endl
                 << "Examples:" << std::endl
                 << "100.0   0 0 0 1.0   0   0 1.0 \t One body moving form the coordinate system's centre along x axis with speed 1" << std::endl
@@ -431,7 +461,7 @@ void collisionDebug(double timestep, Body a, Body b){
       return -1;
     }
     else if ( (argc-2)%7!=0 ) {
-      std::cerr << "error in arguments: each planet is given by seven entries (position, velocity, mass)" << std::endl;
+      std::cout << "error in arguments: each planet is given by seven entries (position, velocity, mass)" << std::endl;
       return -2;
     }
     return 0;
@@ -439,13 +469,14 @@ void collisionDebug(double timestep, Body a, Body b){
 
   // Starts the space body simulations.
   int performSpaceBodies(Body* bodies){
-    std::cerr << "Performing Space Bodies" << std::endl;
+    std::cout << "Performing Space Bodies" << std::endl;
 
     if (isCsvCollisionWrite){
       // write header for csv if enabled
       collisionWrite("Timestep,");
       collisionWrite("distance\n");
     }
+
 
     int timeStepsSinceLastPlot = 0;
     const int plotEveryKthStep = 100;
@@ -506,8 +537,10 @@ void collisionDebug(double timestep, Body a, Body b){
 
   // Initiate runtime
   int main(int argc, char** argv) {
-    // check for arguments size.
     bool RandomBodies = true;
+    // check for arguments size.
+
+    // check for argument size
     if (argc > 1){
       RandomBodies = false;
     }
@@ -517,12 +550,29 @@ void collisionDebug(double timestep, Body a, Body b){
       NumberOfBodies = (argc-2) / 7; // count the number of bodies.
       Body bodies[NumberOfBodies];
       // initial setup.
-      setUp(argc,argv,bodies);
+      
+      int loopCap = 1;
+      if (isCsvCollisionWrite && collisionIterate){
+        loopCap = 10;
+      }
 
-      if (useParaview){openParaviewVideoFile();printParaviewSnapshot(0, bodies);}
+      for (int s = 0; s < loopCap; s++){
+        // reset values
+        for (int i = 0; i < NumberOfBodies; i++){bodies[i].reset();}
+        NumberOfBodies = (argc-2) / 7; // count the number of bodies.
+        t = 0;
+        tFinal = 0;
+        isCollided = false;
 
-      // perform space loops.
-      performSpaceBodies(bodies);
+        // set up values again
+        setUp(argc,argv,bodies);
+        
+        if (useParaview){openParaviewVideoFile();printParaviewSnapshot(0, bodies);}
+
+        // perform space loops.
+        performSpaceBodies(bodies);
+        defaultTimeStepSize = defaultTimeStepSize / 2;
+      }
 
       if (useParaview){closeParaviewVideoFile();}
       }
