@@ -21,11 +21,11 @@
 #include <unordered_map>
 #include <fstream>
 
-
 // CONFIGS
-// double defaultTimeStepSize = 0.00000009765625; 
-double defaultTimeStepSize = 0.00000001;
+
+double defaultTimeStepSize = 0.000005;
 double smallSizeLimit = 1e-8; // If variables are smaller than this then it might as well be zero.
+int numberOfIterations = 10; // When using the collision iteration (for different timesteps)
 bool adaptiveTimeStepCheck = false; // If true, then use adaptive timestep
 bool isCollided = false; // this is a one way boolean; if turned on then it will not come back!
 bool useParaview = false; // if true, write paraview related files.
@@ -35,6 +35,7 @@ bool isCsvCollisionWrite = true; // if set to true, it will generate a csv of tw
 bool collisionIterate = true; // iterates through multiple rounds, halving the timestep size as it goes.
 bool printBodiesInfo = false; // prints the bodies and their data
 bool printTimestampInfo = false;// print timestamp if true
+bool runParallel = false; // if set to parallel; then we run it in series.
 
 // SETUP VARIABLES-------------------------------
   double t = 0;
@@ -119,17 +120,18 @@ bool printTimestampInfo = false;// print timestamp if true
 
 void collisionDebug(double timestep, Body a, Body b){
   if (isCsvCollisionWrite){
-    double pos = abs(a.x[0]);
+    double pos = abs(0.155-a.x[0]);
     
     std::ostringstream strs;
     strs << pos;
     std::string errStr = strs.str();
-    std::ostringstream str2;
-    strs << timestep;
-    std::string ts = strs.str();
 
-    std::cout << "COLLISION @ "<< t<<", Timestep: "<< timestep << ": Pos: " << a.x[0] << std::endl;
-    collisionWrite(ts+ "," + errStr + "\n");
+    std::ostringstream str2;
+    str2 << timestep;
+    std::string ts = str2.str();
+
+    std::cout << "COLLISION @ "<< t<<", Timestep: "<< timestep << ": Pos: " << pos << std::endl;
+    collisionWrite(ts+ ", " + errStr + "\n");
   }
 }
 
@@ -471,13 +473,6 @@ void collisionDebug(double timestep, Body a, Body b){
   int performSpaceBodies(Body* bodies){
     std::cout << "Performing Space Bodies" << std::endl;
 
-    if (isCsvCollisionWrite){
-      // write header for csv if enabled
-      collisionWrite("Timestep,");
-      collisionWrite("distance\n");
-    }
-
-
     int timeStepsSinceLastPlot = 0;
     const int plotEveryKthStep = 100;
 
@@ -553,8 +548,15 @@ void collisionDebug(double timestep, Body a, Body b){
       
       int loopCap = 1;
       if (isCsvCollisionWrite && collisionIterate){
-        loopCap = 10;
+        loopCap = numberOfIterations;
       }
+
+      if (isCsvCollisionWrite){
+        // write header for csv if enabled
+        collisionWrite("Timestep,");
+        collisionWrite("distance\n");
+      }
+
 
       for (int s = 0; s < loopCap; s++){
         // reset values
