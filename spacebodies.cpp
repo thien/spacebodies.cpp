@@ -23,7 +23,7 @@
 
 // CONFIGS
 
-double defaultTimeStepSize = 0.000005;
+double defaultTimeStepSize = 0.00000002;
 double smallSizeLimit = 1e-8; // If variables are smaller than this then it might as well be zero.
 int numberOfIterations = 10; // When using the collision iteration (for different timesteps)
 bool adaptiveTimeStepCheck = false; // If true, then use adaptive timestep
@@ -36,6 +36,10 @@ bool collisionIterate = true; // iterates through multiple rounds, halving the t
 bool printBodiesInfo = false; // prints the bodies and their data
 bool printTimestampInfo = false;// print timestamp if true
 bool runParallel = false; // if set to parallel; then we run it in series.
+
+double referenceDistance = 0.155; // If measuring error, use this value as the reference!
+
+
 
 // SETUP VARIABLES-------------------------------
   double t = 0;
@@ -120,7 +124,7 @@ bool runParallel = false; // if set to parallel; then we run it in series.
 
 void collisionDebug(double timestep, Body a, Body b){
   if (isCsvCollisionWrite){
-    double pos = abs(0.155-a.x[0]);
+    double pos = a.x[0]-referenceDistance;
     
     std::ostringstream strs;
     strs << pos;
@@ -130,8 +134,12 @@ void collisionDebug(double timestep, Body a, Body b){
     str2 << timestep;
     std::string ts = str2.str();
 
-    std::cout << "COLLISION @ "<< t<<", Timestep: "<< timestep << ": Pos: " << pos << std::endl;
-    collisionWrite(ts+ ", " + errStr + "\n");
+    std::ostringstream str3;
+    str3 << timestep / pos;
+    std::string t3 = str3.str();
+
+    std::cout << "COLLISION @ t="<< t<<", Timestep: "<< timestep << ": Error: " << pos << ", Location: " << a.x[0] << ", Ratio: " << (timestep/pos) << std::endl;
+    collisionWrite(ts+ ", " + errStr + ","+t3+"\n");
   }
 }
 
@@ -273,9 +281,9 @@ void collisionDebug(double timestep, Body a, Body b){
         std::cout << "invalid mass for body " << i << std::endl;
         exit(-2);
       }
-      printf("Body %5.0d \t %4.2f %4.2f %4.2f %4.2f %4.2f %4.2f %4.2f \n", i, b[i].x[0], b[i].x[1], b[i].x[2], b[i].v[0], b[i].v[1], b[i].v[2], b[i].mass);
+      // printf("Body %5.0d \t %4.2f %4.2f %4.2f %4.2f %4.2f %4.2f %4.2f \n", i, b[i].x[0], b[i].x[1], b[i].x[2], b[i].v[0], b[i].v[1], b[i].v[2], b[i].mass);
     }
-    std::cout << "created setup with " << NumberOfBodies << " bodies" << std::endl;
+    // std::cout << "created setup with " << NumberOfBodies << " bodies" << std::endl;
   }
 
   // manipulate the timestep (only called when adaptive is enabled)
@@ -471,13 +479,9 @@ void collisionDebug(double timestep, Body a, Body b){
 
   // Starts the space body simulations.
   int performSpaceBodies(Body* bodies){
-    std::cout << "Performing Space Bodies" << std::endl;
-
+  
     int timeStepsSinceLastPlot = 0;
     const int plotEveryKthStep = 100;
-
-    countWrite("Time, Number of Bodies\n");
-    countWrite(std::to_string(t) + "," + std::to_string(NumberOfBodies) + "\n");
 
     while (t<=tFinal) {
       updateBodies(bodies);
@@ -557,7 +561,10 @@ void collisionDebug(double timestep, Body a, Body b){
         collisionWrite("distance\n");
       }
 
-
+      std::cout << "Performing Space Bodies" << std::endl;
+      countWrite("Time, Number of Bodies\n");
+      countWrite(std::to_string(t) + "," + std::to_string(NumberOfBodies) + "\n");
+      
       for (int s = 0; s < loopCap; s++){
         // reset values
         for (int i = 0; i < NumberOfBodies; i++){bodies[i].reset();}
