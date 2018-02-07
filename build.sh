@@ -3,10 +3,10 @@ if [ ! -d build ]; then
   mkdir -p build
 fi
 # compile spacebodies code (Parallel)
-# g++ -O3 --std=c++11 -openmp spacebodies.cpp -o build/spacebodies
+g++ -O3 --std=c++11 -openmp spacebodies.cpp -o build/spacebodies
 
 # compile spacebodies code (Series)
-g++ -O3 --std=c++11 spacebodies.cpp -o build/spacebodies 
+# g++ -O3 --std=c++11 spacebodies.cpp -o build/spacebodies 
 
 
 

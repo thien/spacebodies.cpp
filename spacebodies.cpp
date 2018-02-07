@@ -21,7 +21,7 @@
 #include <math.h>
 #include <unordered_map>
 #include <fstream>
-// #include <omp.h>
+#include <omp.h>
 
 // CONFIGS
 bool adaptiveTimeStepCheck = false; // If true, then use adaptive timestep
@@ -43,11 +43,15 @@ bool printTimestampInfo = true;// print timestamp if true
 
 double referenceDistance = 0.155; // If measuring error, use this value as the reference!
 
+// Tools to manage random spacebodies
+// (This is utilised by initiating spacebodies without any parameters.)
 bool RandomBodies = true;
-int NumberOfRandomBodies = 9;
-double randomSimTFinal = 0.00002;
+int NumberOfRandomBodies = 10000;
+double randomSimTFinal = 10.0;
+double fMin = -2.0; // random double min
+double fMax = 2.0; // random double max
 
-std::srand(std::time(0)); //use current time as seed for random generator
+double seed = 12321321;
 
 // SETUP VARIABLES-------------------------------
   bool isCollided = false;
@@ -386,7 +390,7 @@ void collisionDebug(double timestep, Body a, Body b){
     int collisions[NumberOfBodies][2];
     int collisionPairCount = 0;
     
-    // #pragma omp parallel for
+    #pragma omp parallel for
     for (int i=0; i<NumberOfBodies; i++) {
       if (printBodiesInfo){
         bodies[i].print(i);
@@ -418,6 +422,8 @@ void collisionDebug(double timestep, Body a, Body b){
             }
           // calculate combined mass
           double calc4 = bodies[i].mass*bodies[j].mass/distance/distance/distance;
+
+          // update force for both i and j (to reduce the number of ops)
           for (int k = 0; k < 3; k++){
             bodies[i].force[k] += (bodies[j].x[k]-bodies[i].x[k]) * calc4;
             bodies[j].force[k] += (bodies[i].x[k]-bodies[j].x[k]) * calc4;
@@ -446,7 +452,6 @@ void collisionDebug(double timestep, Body a, Body b){
     // if theres collisions, then make new body and remove the collided bodies
     int BeforeBodyCount = NumberOfBodies;
     checkCollision(bodies, collisions, collisionPairCount);
-
 
     // write to csv the number of bodies at this state.
     if ((BeforeBodyCount - NumberOfBodies) != 0){
@@ -513,19 +518,18 @@ void collisionDebug(double timestep, Body a, Body b){
     for (int i = 0; i < NumberOfBodies; i++){
       double random_value[7];
       for(int j = 0; j < 7; j++){
-        // generate random value between 0-1 (as a float)
-        double fMin = -100.0;
-        double fMax = 100.0;
+        // generate random double
           double f = (double)rand() / RAND_MAX;
           f = fMin + f * (fMax - fMin);
 
         // spread range from -1 to 1 non inclusive and add to array
         random_value[j] = f;
       }
-      // assign the random values to the body
+      // initialise the bodies values.
       for(int k = 0; k < 3; k++){
         b[i].x[k] = random_value[k];
         b[i].v[k] = random_value[k+3];
+        b[i].force[k] = 0;
       }
       // make sure the mass has a positive value!
       b[i].mass = fabs(random_value[6]);
@@ -544,7 +548,8 @@ void collisionDebug(double timestep, Body a, Body b){
 
   // Initiate runtime
   int main(int argc, char** argv) {
-    // check for arguments size.
+    // set random seed (should be different every time!)
+    srand(seed);
 
     // check for argument size
     if (argc > 1){
