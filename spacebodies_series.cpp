@@ -14,19 +14,17 @@
 
 #include <fstream>
 #include <sstream>
-#include <cstdlib>
 #include <iostream>
-#include <ctime>
 #include <string>
+#include <cstdlib>
 #include <math.h>
 #include <unordered_map>
 #include <fstream>
-// #include <omp.h>
 
 // CONFIGS
 bool adaptiveTimeStepCheck = false; // If true, then use adaptive timestep
 bool useParaview = false; // if true, write paraview related files.
-bool runParallel = true; // if set to parallel; then we run it in series.
+bool runParallel = false; // if set to parallel; then we run it in series.
 
 double defaultTimeStepSize = 0.00001;
 double smallSizeLimit = 1e-8; // If variables are smaller than this then it might as well be zero.
@@ -43,17 +41,14 @@ bool printTimestampInfo = true;// print timestamp if true
 
 double referenceDistance = 0.155; // If measuring error, use this value as the reference!
 
-bool RandomBodies = true;
-int NumberOfRandomBodies = 9;
-double randomSimTFinal = 0.00002;
 
-std::srand(std::time(0)); //use current time as seed for random generator
 
 // SETUP VARIABLES-------------------------------
   bool isCollided = false;
   double t = 0;
   double tFinal = 0;
   int NumberOfBodies = 0;
+
 // CSV WRITER HANDLERS --------------------------
 
   std::ofstream csvBodyCountFile ("bodycount.csv");
@@ -386,7 +381,6 @@ void collisionDebug(double timestep, Body a, Body b){
     int collisions[NumberOfBodies][2];
     int collisionPairCount = 0;
     
-    // #pragma omp parallel for
     for (int i=0; i<NumberOfBodies; i++) {
       if (printBodiesInfo){
         bodies[i].print(i);
@@ -508,19 +502,15 @@ void collisionDebug(double timestep, Body a, Body b){
 
     // I dont understand why so many people upvoted this answer. It is mathematically incorrect. RAND_MAX is a very small number (typically 2^16). That means that from 23 bits of the floating point you make only 15 random. The others will be probably zero. You will indeed get random numbers in uniform distribution but of low precision. For example your random generator can generate 0.00001 and 0.00002 but cannot generate 0.000017. So you have a uniform distribution but of low precision (256 times less precision than the actual floating point). – DanielHsH Aug 14 '14 at 8:25
 
-    double maxFloat = 1.0;
+    float maxFloat = 1.0;
 
     for (int i = 0; i < NumberOfBodies; i++){
-      double random_value[7];
+      float random_value[7];
       for(int j = 0; j < 7; j++){
         // generate random value between 0-1 (as a float)
-        double fMin = -100.0;
-        double fMax = 100.0;
-          double f = (double)rand() / RAND_MAX;
-          f = fMin + f * (fMax - fMin);
-
+        float random_val = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
         // spread range from -1 to 1 non inclusive and add to array
-        random_value[j] = f;
+        random_value[j] = (random_val - 0.5) * 2;
       }
       // assign the random values to the body
       for(int k = 0; k < 3; k++){
@@ -535,8 +525,8 @@ void collisionDebug(double timestep, Body a, Body b){
   // Runs the random bodies simulation
   void runRandomBodies(){
     // test with random bodies
-      NumberOfBodies = NumberOfRandomBodies;
-      tFinal = randomSimTFinal;
+      NumberOfBodies = 10000;
+      tFinal = 20.0;
       Body bodies[NumberOfBodies];
       generateRandomBodies(bodies);
       performSpaceBodies(bodies);
@@ -544,6 +534,7 @@ void collisionDebug(double timestep, Body a, Body b){
 
   // Initiate runtime
   int main(int argc, char** argv) {
+    bool RandomBodies = true;
     // check for arguments size.
 
     // check for argument size
