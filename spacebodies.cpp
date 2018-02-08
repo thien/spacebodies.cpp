@@ -47,7 +47,7 @@ double referenceDistance = 0.155; // If measuring error, use this value as the r
 // (This is utilised by initiating spacebodies without any parameters.)
 bool RandomBodies = true;
 int NumberOfRandomBodies = 10000;
-double randomSimTFinal = 10.0;
+double randomSimTFinal = 1.0;
 double fMin = -1.00; // random double min
 double fMax = 1.00; // random double max
 
@@ -59,6 +59,7 @@ double seed = 12321321;
   double t = 0;
   double tFinal = 0;
   int NumberOfBodies = 0;
+  double currentTimestep = 0;
 
 // CSV WRITER HANDLERS --------------------------
 
@@ -115,7 +116,7 @@ double seed = 12321321;
   };
 
 
-void collisionDebug(double timestep, Body a, Body b){
+void collisionDebug(Body a, Body b){
   if (isCsvCollisionWrite){
     double pos = a.x[0]-referenceDistance;
     
@@ -124,14 +125,14 @@ void collisionDebug(double timestep, Body a, Body b){
     std::string errStr = strs.str();
 
     std::ostringstream str2;
-    str2 << timestep;
+    str2 << currentTimestep;
     std::string ts = str2.str();
 
     std::ostringstream str3;
-    str3 << timestep / pos;
+    str3 << currentTimestep / pos;
     std::string t3 = str3.str();
 
-    std::cout << "COLLISION @ t="<< t<<", Timestep: "<< timestep << ": Error: " << pos << ", Location: " << a.x[0] << ", Ratio: " << (timestep/pos) << std::endl;
+    std::cout << "COLLISION @ t="<< t<<", Timestep: "<< currentTimestep << ": Error: " << pos << ", Location: " << a.x[0] << ", Ratio: " << (currentTimestep/pos) << std::endl;
     collisionWrite(ts+ ", " + errStr + ","+t3+"\n");
   }
 }
@@ -202,6 +203,9 @@ void collisionDebug(double timestep, Body a, Body b){
 
   // Checks 
   void checkCollision(Body b[], int positions[][2], int collisionPairCount){
+    for (int i = 0; i < collisionPairCount; i++){
+       collisionDebug(b[positions[i][0]], b[positions[i][1]]);
+    }
     std::unordered_map<std::string,bool> used_bodies;
 
     // initiate new pos of collided bodies.
@@ -351,14 +355,10 @@ void collisionDebug(double timestep, Body a, Body b){
 
   // function that updates the positions of the particles in space
   void updateBodies(Body* bodies) {
-    if (printBodiesInfo){
-      printf("\n\n"); 
-    }
-    if (printTimestampInfo){
-      printf ("Time: %012.10f, NumberOfBodies: %1.0d \n", t, NumberOfBodies);
-    }
-
-    double timestep = defaultTimeStepSize;
+    int i,j,k; //incrementer variables
+    currentTimestep = defaultTimeStepSize;
+    if (printBodiesInfo){printf("\n\n");}
+    if (printTimestampInfo){printf ("T: %012.10f, # Bodies: %1.0d \n", t, NumberOfBodies);}
 
     // initiate positions of the shortest body positions
     double closestDistance = 999999;
@@ -367,29 +367,29 @@ void collisionDebug(double timestep, Body a, Body b){
     // initiate values we'll use to determine collided bodies
     int collisions[NumberOfBodies][2];
     int collisionPairCount = 0;
-    
-    // Calculate distances and forces for each body
-    // Note that we can run this in SIMD since none of the 
-    // iterations depends on the previous ones
-    int i,j;
-    #pragma omp for private(j)
-    for (i=0; i<NumberOfBodies; i++) {
-      // print bodies if enabled
-      if (printBodiesInfo){bodies[i].print(i);}
-      // only calculate half the calculations!
-      for (j=0; j<i; j++) {
-        if (i != j){ // make sure it doesn't interact with itself.
-          // calculate distance
-          double distance = sqrt(
-            (bodies[i].x[0]-bodies[j].x[0]) * (bodies[i].x[0]-bodies[j].x[0]) +
-            (bodies[i].x[1]-bodies[j].x[1]) * (bodies[i].x[1]-bodies[j].x[1]) +
-            (bodies[i].x[2]-bodies[j].x[2]) * (bodies[i].x[2]-bodies[j].x[2])
-          );
-          // have they collided?
+    int BeforeBodyCount = NumberOfBodies;
+
+    // #pragma omp parallel default(none) private(j,k) shared(i, isCollided, smallSizeLimit, adaptiveTimeStepCheck, BeforeBodyCount, printBodiesInfo, t, bodies, currentTimestep, closestDistance, closestPair1, closestPair2, collisions, collisionPairCount, NumberOfBodies)
+    {
+      // Calculate distances and forces for each body
+      // Note that we can run this in SIMD since none of the 
+      // iterations depends on the previous ones
+      #pragma omp parallel for schedule(dynamic) default(none) private(j,k) shared(i, isCollided, smallSizeLimit, adaptiveTimeStepCheck, BeforeBodyCount, printBodiesInfo, t, bodies, currentTimestep, closestDistance, closestPair1, closestPair2, collisions, collisionPairCount, NumberOfBodies) 
+      for (i=0; i<NumberOfBodies; i++) {
+        // print bodies if enabled
+        if (printBodiesInfo){bodies[i].print(i);}
+        // only calculate half the calculations!
+        for (j=0; j<i; j++) {
+          if (i != j){ // make sure it doesn't interact with itself.
+            // calculate distance
+            double distance = sqrt(
+              (bodies[i].x[0]-bodies[j].x[0]) * (bodies[i].x[0]-bodies[j].x[0]) +
+              (bodies[i].x[1]-bodies[j].x[1]) * (bodies[i].x[1]-bodies[j].x[1]) +
+              (bodies[i].x[2]-bodies[j].x[2]) * (bodies[i].x[2]-bodies[j].x[2])
+            );
+            // have they collided?
             if (distance <= smallSizeLimit){
               isCollided = true;
-              collisionDebug(timestep, bodies[i], bodies[j]);
-              // Collision means the bodies are closer than 1e-8.
               collisions[collisionPairCount][0] = i;
               collisions[collisionPairCount][1] = j;
               collisionPairCount++;
@@ -401,48 +401,56 @@ void collisionDebug(double timestep, Body a, Body b){
                 closestPair2 = j;
               }
             }
-          // calculate combined mass
-          double calc4 = bodies[i].mass*bodies[j].mass/distance/distance/distance;
+            // calculate combined mass
+            double calc4 = bodies[i].mass*bodies[j].mass/distance/distance/distance;
 
-          // update force for both i and j (to reduce the number of ops)
-          for (int k = 0; k < 3; k++){
-            bodies[i].force[k] += (bodies[j].x[k]-bodies[i].x[k]) * calc4;
-            bodies[j].force[k] += (bodies[i].x[k]-bodies[j].x[k]) * calc4;
+            // update force for both i and j (to reduce the number of ops)
+            for (k = 0; k < 3; k++){
+              // #pragma omp atomic
+              bodies[i].force[k] += (bodies[j].x[k]-bodies[i].x[k]) * calc4;
+              // #pragma omp atomic
+              bodies[j].force[k] += (bodies[i].x[k]-bodies[j].x[k]) * calc4;
+            }
           }
         }
       }
-    }
 
-    if (adaptiveTimeStepCheck == true){
-      // update timestep if needed to accommodate the smallest distance
-      timestep = manipulateTimestep(timestep, bodies[closestPair2], bodies[closestPair1], closestDistance);
-    }
+      // #pragma omp barrier
 
-    for (int j=0; j<NumberOfBodies; j++){
-      // update position and velocity of body
-      // bodies[j].printForce();
-      for (int k=0; k<3; k++){
-        // update the position and velocity of the body.
-        bodies[j].x[k] = bodies[j].x[k] + (timestep * bodies[j].v[k]);
-        bodies[j].v[k] = bodies[j].v[k] + (timestep * (bodies[j].force[k] / bodies[j].mass));
+      #pragma omp single
+      {
+        // There isn't really a point on parallelising this
+        if (adaptiveTimeStepCheck == true){
+          // update timestep if needed to accommodate the smallest distance
+          currentTimestep = manipulateTimestep(currentTimestep, bodies[closestPair2], bodies[closestPair1], closestDistance);
+        }
       }
-      bodies[j].resetForce();
-    }
 
-    // if theres collisions, then make new body and remove the collided bodies
-    int BeforeBodyCount = NumberOfBodies;
-    checkCollision(bodies, collisions, collisionPairCount);
+      #pragma omp parallel for private(j) shared(i, bodies, NumberOfBodies, currentTimestep)
+      for (i=0; i<NumberOfBodies; i++){
+        // update position and velocity of body
+        for (j=0; j<3; j++){
+          // update the position and velocity of the body.
+          bodies[i].x[j] = bodies[i].x[j] + (currentTimestep * bodies[i].v[j]);
+          bodies[i].v[j] = bodies[i].v[j] + (currentTimestep * (bodies[i].force[j] / bodies[i].mass));
+        }
+        bodies[i].resetForce();
+      }
 
-    // write to csv the number of bodies at this state if it's changed.
-    if ((BeforeBodyCount - NumberOfBodies) != 0){
-      countWrite(std::to_string(t) + "," + std::to_string(NumberOfBodies) + "\n");
-    }
+      // #pragma omp barrier
 
-    // increment the current time with the time step.
-    t += timestep;
-    
-    // clear screen
-    // std::cout << "\x1B[2J\x1B[H";
+      #pragma omp single
+      {
+        // if theres collisions, then make new body and remove the collided bodies
+        checkCollision(bodies, collisions, collisionPairCount);
+        // increment the current time with the time step.
+        // write to csv the number of bodies at this state if it's changed.
+        if ((BeforeBodyCount - NumberOfBodies) != 0){
+          countWrite(std::to_string(t) + "," + std::to_string(NumberOfBodies) + "\n");
+        }
+        t += currentTimestep;
+      }
+    } 
   }
 
   // check if the arguments are valid
@@ -471,20 +479,19 @@ void collisionDebug(double timestep, Body a, Body b){
   
     int timeStepsSinceLastPlot = 0;
     const int plotEveryKthStep = 100;
-    #pragma omp parallel
-    {
-      while (t<=tFinal) {
-        updateBodies(bodies);
-        timeStepsSinceLastPlot++;
-        // this is used to watch if the debug is called to check for collisions.
-        if (isCollided && isCsvCollisionWrite){
-          break;
-        }
-        if ((timeStepsSinceLastPlot%plotEveryKthStep==0) && useParaview) {
-          printParaviewSnapshot(timeStepsSinceLastPlot/plotEveryKthStep, bodies);
-        }
+   
+    while (t<=tFinal) {
+      updateBodies(bodies);
+      timeStepsSinceLastPlot++;
+      // this is used to watch if the debug is called to check for collisions.
+      if (isCollided && isCsvCollisionWrite){
+        break;
+      }
+      if ((timeStepsSinceLastPlot%plotEveryKthStep==0) && useParaview) {
+        printParaviewSnapshot(timeStepsSinceLastPlot/plotEveryKthStep, bodies);
       }
     }
+    
     return 0;
   }
 
@@ -533,11 +540,11 @@ void collisionDebug(double timestep, Body a, Body b){
     // set random seed (should be different every time!)
     srand(seed);
 
-    #pragma omp parallel
-    {
-        // std::cout<<"sum="<<sum<<std::endl;
-        std::cout<<"threads="<<omp_get_num_threads()<<std::endl;
-    }
+    // #pragma omp parallel
+    // {
+    //     // std::cout<<"sum="<<sum<<std::endl;
+    //     std::cout<<"threads="<<omp_get_num_threads()<<std::endl;
+    // }
     
     // check for argument size
     if (argc > 1){
