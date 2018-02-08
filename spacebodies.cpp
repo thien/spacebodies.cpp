@@ -24,11 +24,11 @@
 #include <omp.h>
 
 // CONFIGS
-bool adaptiveTimeStepCheck = false; // If true, then use adaptive timestep
+bool adaptiveTimeStepCheck = true; // If true, then use adaptive timestep
 bool useParaview = false; // if true, write paraview related files.
 bool runParallel = true; // if set to parallel; then we run it in series.
 
-double defaultTimeStepSize = 0.00001;
+double defaultTimeStepSize = 0.0001;
 double smallSizeLimit = 1e-8; // If variables are smaller than this then it might as well be zero.
 
 int numberOfIterations = 10; // When using the collision iteration (for different timesteps)
@@ -38,7 +38,7 @@ bool collisionIterate = false; // iterates through multiple rounds, halving the 
 bool isCsvBodyCountWrite = false; // if true, will write a csv that counts the number of bodies over time.
 
 // writer variables
-bool printBodiesInfo = true; // prints the bodies and their data
+bool printBodiesInfo = false; // prints the bodies and their data
 bool printTimestampInfo = true;// print timestamp if true
 
 double referenceDistance = 0.155; // If measuring error, use this value as the reference!
@@ -48,16 +48,18 @@ double referenceDistance = 0.155; // If measuring error, use this value as the r
 bool RandomBodies = true;
 int NumberOfRandomBodies = 10000;
 double randomSimTFinal = 10.0;
-double fMin = -2.0; // random double min
-double fMax = 2.0; // random double max
+double fMin = -0.01; // random double min
+double fMax = 0.01; // random double max
 
 double seed = 12321321;
 
 // SETUP VARIABLES-------------------------------
+
   bool isCollided = false;
   double t = 0;
   double tFinal = 0;
   int NumberOfBodies = 0;
+
 // CSV WRITER HANDLERS --------------------------
 
   std::ofstream csvBodyCountFile ("bodycount.csv");
@@ -83,31 +85,14 @@ double seed = 12321321;
       double x[3];   // displacement of body
       double v[3];   // velocity of body
       double mass;    // body mass
-      double nx[3];  // future displacement of body
-      double nv[3];  // future velocity of body
-      double nm;   // future body mass
-
 
       void reset(){
         for (int i = 0; i < 3; i++){
           force[i] = 0;
           x[i] = 0;
           v[i] = 0;
-          nx[i] = 0;
-          nv[i] = 0;
         }
         mass = 0;
-        nm = 0;
-      }
-      void assignNewValues(){
-        // assigns future values to be current values.
-        for (int i = 0; i < 3; i++) {
-            x[i] = nx[i];
-            v[i] = nv[i];
-        }
-        mass = nm;
-        // also reset the force values when we're done.
-        resetForce();
       }
 
       void capForceLimit(){
@@ -116,7 +101,6 @@ double seed = 12321321;
       }
 
       void printForce(){
-        // std::cout << "    Force:  "<<force[0]<< ", "<<force[1]<< ", "<<force[2]<<std::endl;
         printf("Force: %+020.15f, %+020.15f, %+020.15f \n", force[0],force[1],force[2]);
       }
 
@@ -126,7 +110,6 @@ double seed = 12321321;
 
       void print(int bodyID){
         // literally prints body statistics.
-        // Values are (ID, x,y,z, v(x), v(y), v(z), mass)
         printf("Body %4d: %+010.6f  %+010.6f  %+010.6f  %+010.6f  %+010.6f  %+010.6f  %+010.6f \n", bodyID, x[0], x[1], x[2], v[0], v[1], v[2], mass);
       }
   };
@@ -177,7 +160,7 @@ void collisionDebug(double timestep, Body a, Body b){
           << bodies[i].x[1]
           << " "
           << bodies[i].x[2]
-          << " ";
+          << " \n";
     }
 
     out << "   </DataArray>" << std::endl
@@ -205,9 +188,6 @@ void collisionDebug(double timestep, Body a, Body b){
 
   // Fuses two bodies together.
   Body joinBodies(Body x, Body y){
-    // joins the forces and the masses of two bodies.
-    // The new body shall have a new mass that is equal to the sum of the masses of the original bodies and an averaged velocity (derive the formulae and present it in the report; you might want to implement some momentum-preserving scheme, i.e. mass-averaged result velocities, but the assignment is about the coding not about realistic physics, so a simple average of velocity components does the job).
-
     Body z;
     // combine mass.
     z.mass = x.mass + y.mass;
@@ -215,9 +195,7 @@ void collisionDebug(double timestep, Body a, Body b){
       // get position of one of the colluded bodies
       z.x[i] = (x.x[i] + x.x[i]) / 2;
       // calculate velocity of new item. (Mass averaged velocities)
-      // std::cout << "V"<<i<<": "<< z.v[i] << std::endl;
       z.v[i] = (x.v[i]/x.mass) + (y.v[i]/y.mass);
-      // std::cout << "V"<<i<<": "<< z.v[i] << std::endl;
     }
     return z;
   }
@@ -377,7 +355,7 @@ void collisionDebug(double timestep, Body a, Body b){
       printf("\n\n"); 
     }
     if (printTimestampInfo){
-      printf ("Time: %4.8f, NumberOfBodies: %1.0d \n", t, NumberOfBodies);
+      printf ("Time: %012.10f, NumberOfBodies: %1.0d \n", t, NumberOfBodies);
     }
 
     double timestep = defaultTimeStepSize;
@@ -390,6 +368,7 @@ void collisionDebug(double timestep, Body a, Body b){
     int collisions[NumberOfBodies][2];
     int collisionPairCount = 0;
     
+    // Calculate distances and forces for each body
     #pragma omp parallel for
     for (int i=0; i<NumberOfBodies; i++) {
       if (printBodiesInfo){
@@ -442,18 +421,17 @@ void collisionDebug(double timestep, Body a, Body b){
       // bodies[j].printForce();
       for (int k=0; k<3; k++){
         // update the position and velocity of the body.
-        bodies[j].nx[k] = bodies[j].x[k] + (timestep * bodies[j].v[k]);
-        bodies[j].nv[k] = bodies[j].v[k] + (timestep * (bodies[j].force[k] / bodies[j].mass));
+        bodies[j].x[k] = bodies[j].x[k] + (timestep * bodies[j].v[k]);
+        bodies[j].v[k] = bodies[j].v[k] + (timestep * (bodies[j].force[k] / bodies[j].mass));
       }
-      bodies[j].nm = bodies[j].mass;
-      bodies[j].assignNewValues();
+      bodies[j].resetForce();
     }
 
     // if theres collisions, then make new body and remove the collided bodies
     int BeforeBodyCount = NumberOfBodies;
     checkCollision(bodies, collisions, collisionPairCount);
 
-    // write to csv the number of bodies at this state.
+    // write to csv the number of bodies at this state if it's changed.
     if ((BeforeBodyCount - NumberOfBodies) != 0){
       countWrite(std::to_string(t) + "," + std::to_string(NumberOfBodies) + "\n");
     }
@@ -527,8 +505,8 @@ void collisionDebug(double timestep, Body a, Body b){
       }
       // initialise the bodies values.
       for(int k = 0; k < 3; k++){
-        b[i].x[k] = random_value[k];
-        b[i].v[k] = random_value[k+3];
+        b[i].x[k] = round( random_value[k] * 1000.0 ) / 1000.0; // round position to 3dp
+        b[i].v[k] = round( random_value[k+3]*10 * 1000.0 ) / 1000.0; // round velocity to 3dp
         b[i].force[k] = 0;
       }
       // make sure the mass has a positive value!
@@ -551,6 +529,12 @@ void collisionDebug(double timestep, Body a, Body b){
     // set random seed (should be different every time!)
     srand(seed);
 
+    #pragma omp parallel
+    {
+        // std::cout<<"sum="<<sum<<std::endl;
+        std::cout<<"threads="<<omp_get_num_threads()<<std::endl;
+    }
+    
     // check for argument size
     if (argc > 1){
       RandomBodies = false;
