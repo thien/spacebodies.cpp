@@ -48,8 +48,8 @@ double referenceDistance = 0.155; // If measuring error, use this value as the r
 bool RandomBodies = true;
 int NumberOfRandomBodies = 10000;
 double randomSimTFinal = 10.0;
-double fMin = -0.01; // random double min
-double fMax = 0.01; // random double max
+double fMin = -1.00; // random double min
+double fMax = 1.00; // random double max
 
 double seed = 12321321;
 
@@ -369,13 +369,15 @@ void collisionDebug(double timestep, Body a, Body b){
     int collisionPairCount = 0;
     
     // Calculate distances and forces for each body
-    #pragma omp parallel for
-    for (int i=0; i<NumberOfBodies; i++) {
-      if (printBodiesInfo){
-        bodies[i].print(i);
-      }
+    // Note that we can run this in SIMD since none of the 
+    // iterations depends on the previous ones
+    int i,j;
+    #pragma omp for private(j)
+    for (i=0; i<NumberOfBodies; i++) {
+      // print bodies if enabled
+      if (printBodiesInfo){bodies[i].print(i);}
       // only calculate half the calculations!
-      for (int j=0; j<i; j++) {
+      for (j=0; j<i; j++) {
         if (i != j){ // make sure it doesn't interact with itself.
           // calculate distance
           double distance = sqrt(
@@ -469,16 +471,18 @@ void collisionDebug(double timestep, Body a, Body b){
   
     int timeStepsSinceLastPlot = 0;
     const int plotEveryKthStep = 100;
-
-    while (t<=tFinal) {
-      updateBodies(bodies);
-      timeStepsSinceLastPlot++;
-      // this is used to watch if the debug is called to check for collisions.
-      if (isCollided && isCsvCollisionWrite){
-        break;
-      }
-      if ((timeStepsSinceLastPlot%plotEveryKthStep==0) && useParaview) {
-        printParaviewSnapshot(timeStepsSinceLastPlot/plotEveryKthStep, bodies);
+    #pragma omp parallel
+    {
+      while (t<=tFinal) {
+        updateBodies(bodies);
+        timeStepsSinceLastPlot++;
+        // this is used to watch if the debug is called to check for collisions.
+        if (isCollided && isCsvCollisionWrite){
+          break;
+        }
+        if ((timeStepsSinceLastPlot%plotEveryKthStep==0) && useParaview) {
+          printParaviewSnapshot(timeStepsSinceLastPlot/plotEveryKthStep, bodies);
+        }
       }
     }
     return 0;
