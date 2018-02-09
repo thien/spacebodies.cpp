@@ -369,12 +369,13 @@ void collisionDebug(Body a, Body b){
     int collisionPairCount = 0;
     int BeforeBodyCount = NumberOfBodies;
 
-    // #pragma omp parallel default(none) private(j,k) shared(i, isCollided, smallSizeLimit, adaptiveTimeStepCheck, BeforeBodyCount, printBodiesInfo, t, bodies, currentTimestep, closestDistance, closestPair1, closestPair2, collisions, collisionPairCount, NumberOfBodies)
+    #pragma omp parallel default(none) private(j,k) shared(i, isCollided, smallSizeLimit, adaptiveTimeStepCheck, BeforeBodyCount, printBodiesInfo, t, bodies, currentTimestep, closestDistance, closestPair1, closestPair2, collisions, collisionPairCount, NumberOfBodies)
+    // #pragma omp parallel
     {
       // Calculate distances and forces for each body
       // Note that we can run this in SIMD since none of the 
       // iterations depends on the previous ones
-      #pragma omp parallel for schedule(dynamic) default(none) private(j,k) shared(i, isCollided, smallSizeLimit, adaptiveTimeStepCheck, BeforeBodyCount, printBodiesInfo, t, bodies, currentTimestep, closestDistance, closestPair1, closestPair2, collisions, collisionPairCount, NumberOfBodies) 
+      #pragma omp for schedule(auto)
       for (i=0; i<NumberOfBodies; i++) {
         // print bodies if enabled
         if (printBodiesInfo){bodies[i].print(i);}
@@ -415,7 +416,7 @@ void collisionDebug(Body a, Body b){
         }
       }
 
-      // #pragma omp barrier
+      #pragma omp barrier
 
       #pragma omp single
       {
@@ -424,23 +425,19 @@ void collisionDebug(Body a, Body b){
           // update timestep if needed to accommodate the smallest distance
           currentTimestep = manipulateTimestep(currentTimestep, bodies[closestPair2], bodies[closestPair1], closestDistance);
         }
-      }
-
-      #pragma omp parallel for private(j) shared(i, bodies, NumberOfBodies, currentTimestep)
-      for (i=0; i<NumberOfBodies; i++){
-        // update position and velocity of body
-        for (j=0; j<3; j++){
-          // update the position and velocity of the body.
-          bodies[i].x[j] = bodies[i].x[j] + (currentTimestep * bodies[i].v[j]);
-          bodies[i].v[j] = bodies[i].v[j] + (currentTimestep * (bodies[i].force[j] / bodies[i].mass));
+        
+        
+        // initialising multiple threads will probably take longer.
+        for (i=0; i<NumberOfBodies; i++){
+          // update position and velocity of body
+          for (j=0; j<3; j++){
+            // update the position and velocity of the body.
+            bodies[i].x[j] = bodies[i].x[j] + (currentTimestep * bodies[i].v[j]);
+            bodies[i].v[j] = bodies[i].v[j] + (currentTimestep * (bodies[i].force[j] / bodies[i].mass));
+          }
+          bodies[i].resetForce();
         }
-        bodies[i].resetForce();
-      }
 
-      // #pragma omp barrier
-
-      #pragma omp single
-      {
         // if theres collisions, then make new body and remove the collided bodies
         checkCollision(bodies, collisions, collisionPairCount);
         // increment the current time with the time step.

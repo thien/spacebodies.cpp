@@ -9,9 +9,6 @@ g++ -O3 --std=c++11 -fopenmp spacebodies.cpp -o build/spacebodies
 # g++ -O3 --std=c++11 spacebodies.cpp -o build/spacebodies 
 
 
-
-
-
 ./build/spacebodies 
 
 # run spacebodies; note that it comes in the form of px py pz vx vy vz m
