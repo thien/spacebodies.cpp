@@ -407,16 +407,14 @@ void collisionDebug(Body a, Body b){
 
             // update force for both i and j (to reduce the number of ops)
             for (k = 0; k < 3; k++){
-              // #pragma omp atomic
               bodies[i].force[k] += (bodies[j].x[k]-bodies[i].x[k]) * calc4;
-              // #pragma omp atomic
               bodies[j].force[k] += (bodies[i].x[k]-bodies[j].x[k]) * calc4;
             }
           }
         }
       }
-
-      #pragma omp barrier
+    // }
+      // #pragma omp barrier
 
       #pragma omp single
       {
@@ -425,8 +423,7 @@ void collisionDebug(Body a, Body b){
           // update timestep if needed to accommodate the smallest distance
           currentTimestep = manipulateTimestep(currentTimestep, bodies[closestPair2], bodies[closestPair1], closestDistance);
         }
-        
-        
+                
         // initialising multiple threads will probably take longer.
         for (i=0; i<NumberOfBodies; i++){
           // update position and velocity of body
