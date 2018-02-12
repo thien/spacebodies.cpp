@@ -32,17 +32,26 @@ The table below describes the information related to the two bodies used for the
 | 1 | +0.1 | +0.1 | +0.1 | -2.0 | -2.0 | -2.0 | $1e^{-11}$ |
 | 2 | -1.0 | -1.0 | -1.0 | +2.0 | +2.0 | +2.0 | $1e^{-11}$ |
 
-The bodies collide at $(x,y,z) = (0.155,0.155,0.155)$ at time $t=0.275$. The error is calculated between the position of the error of the new item. The following table shows the timestep used to calculate the collision, and the error value left over. We calculate the error of only one dimension; $x$, as the others would follow a very similar pattern.
+The bodies collide at $(x,y,z) = (0.155,0.155,0.155)$ at time $t=0.275$. The error is calculated through calculating the difference between the position of one body and the other body upon collision. The following table shows the timestep used to calculate the collision, and the error value left over. We calculate the error of only one dimension; $x$, as the other dimensions ($y,z$) would follow the same values.
 
-| Timestep        | Error at $x$     | Collision? |
+
+| Timestep        | Error    | Position of $x$ |
 |-----------------+------------------+------------|
-|0.001 (Adaptive) | -0.00000000351134| yes        |
-|0.000000005      | -0.00000000353880| yes        |
-|0.0000000025     | -0.00000000337228| yes        |
-|0.00000000125    | -0.00000000481655| yes        |
-|0.000000000625   | -0.00000000509412| yes        |
-|0.0000000003125  | -0.00000000540662| yes        |
-|0.00000000015625 | -0.00000000649210| yes        |
+|0.0001 (Adaptive) | 0.000199998| -0.4498        |
+|0.000078125000 | 0.000156250000 | -0.449844 |
+|0.000039062500 | 0.000078125000 | -0.449922 |
+|0.000019531300 | 0.000039062500 | -0.449961 |
+|0.000010000000 | 0.000020000000 | -0.44998 |
+|0.000003906250 | 0.000007812500 | -0.449992 |
+|0.000001953130 | 0.000003906250 | -0.449996 |
+|0.000001000000 | 0.000001999990 | -0.449998 |
+|0.000000610352 | 0.000001220720 | -0.449999 |
+|0.000000305176 | 0.000000610365 | -0.449999 |
+|0.000000152588 | 0.000000305098 | -0.45 |
+
+
+![A chart showing the the timestep used against the error produced. The chart shows a clear convergence.](chart.png)
+
 
 <!-- 
 COLLISION @ t=0.275, Timestep: 0.001: Error: 0.002, Location: -0.448, Ratio: 0.5
@@ -53,8 +62,6 @@ COLLISION @ t=0.275, Timestep: 1e-07: Error: 2.00017e-07, Location: -0.45, Ratio
 COLLISION @ t=0.275, Timestep: 1e-08: Error: 1.97119e-08, Location: -0.45, Ratio: 0.507308
 COLLISION @ t=0.275, Timestep: 1e-09: Error: 7.58933e-09, Location: -0.45, Ratio: 0.131764
 COLLISION @ t=0.275, Timestep: 1e-10: Error: 1.51078e-08, Location: -0.45, Ratio: 0.0066191 -->
-
-
 
 Our convergence scheme 
 

@@ -133,7 +133,7 @@ void collisionDebug(Body a, Body b){
     str3 << currentTimestep / pos;
     std::string t3 = str3.str();
 
-    std::cout << "COLLISION @ t="<< t<<", Timestep: "<< currentTimestep << ": Error: " << pos << ", Location: " << a.x[0] << ", Ratio: " << (currentTimestep/pos) << std::endl;
+    std::cout << "COLLISION @ t="<< t<<", Timestep: "<< currentTimestep << ": Error: " << pos << ", Location: " << a.x[0] << "; " << b.x[0] << ", Ratio: " << (currentTimestep/pos) << std::endl;
     collisionWrite(ts+ ", " + errStr + ","+t3+"\n");
   }
 }
@@ -195,7 +195,7 @@ void collisionDebug(Body a, Body b){
     z.mass = x.mass + y.mass;
     for (int i; i < 3; i++){
       // get position of one of the colluded bodies
-      z.x[i] = (x.x[i] + x.x[i]) / 2;
+      z.x[i] = (x.x[i] + y.x[i]) / 2;
       // calculate velocity of new item. (Mass averaged velocities)
       z.v[i] = (x.v[i]/x.mass) + (y.v[i]/y.mass);
     }
