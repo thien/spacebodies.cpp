@@ -32,7 +32,7 @@ The table below describes the information related to the two bodies used for the
 | 1 | +0.1 | +0.1 | +0.1 | -2.0 | -2.0 | -2.0 | $1e^{-11}$ |
 | 2 | -1.0 | -1.0 | -1.0 | +2.0 | +2.0 | +2.0 | $1e^{-11}$ |
 
-The bodies collide at $(x,y,z) = (0.155,0.155,0.155)$ at time $t=0.21$. The error is calculated between the position of the error of the new item. The following table shows the timestep used to calculate the collision, and the error value left over. We calculate the error of only one dimension; $x$, as the others would follow a very similar pattern.
+The bodies collide at $(x,y,z) = (0.155,0.155,0.155)$ at time $t=0.275$. The error is calculated between the position of the error of the new item. The following table shows the timestep used to calculate the collision, and the error value left over. We calculate the error of only one dimension; $x$, as the others would follow a very similar pattern.
 
 | Timestep        | Error at $x$     | Collision? |
 |-----------------+------------------+------------|
@@ -43,6 +43,18 @@ The bodies collide at $(x,y,z) = (0.155,0.155,0.155)$ at time $t=0.21$. The erro
 |0.000000000625   | -0.00000000509412| yes        |
 |0.0000000003125  | -0.00000000540662| yes        |
 |0.00000000015625 | -0.00000000649210| yes        |
+
+<!-- 
+COLLISION @ t=0.275, Timestep: 0.001: Error: 0.002, Location: -0.448, Ratio: 0.5
+COLLISION @ t=0.275, Timestep: 0.0001: Error: 0.0002, Location: -0.4498, Ratio: 0.5
+COLLISION @ t=0.275, Timestep: 1e-05: Error: 2e-05, Location: -0.44998, Ratio: 0.5
+COLLISION @ t=0.275, Timestep: 1e-06: Error: 1.99999e-06, Location: -0.449998, Ratio: 0.500003
+COLLISION @ t=0.275, Timestep: 1e-07: Error: 2.00017e-07, Location: -0.45, Ratio: 0.499958
+COLLISION @ t=0.275, Timestep: 1e-08: Error: 1.97119e-08, Location: -0.45, Ratio: 0.507308
+COLLISION @ t=0.275, Timestep: 1e-09: Error: 7.58933e-09, Location: -0.45, Ratio: 0.131764
+COLLISION @ t=0.275, Timestep: 1e-10: Error: 1.51078e-08, Location: -0.45, Ratio: 0.0066191 -->
+
+
 
 Our convergence scheme 
 
@@ -92,10 +104,17 @@ The machine used consists of Durham's MIRA machine, which is a 128 core intel xe
 
 1. How does the scalability for very brief simulation runs depend on the total particle count?
 
-2. Calibrate Gustafson’s law to your setup and discuss the outcome. Take your considerations on
-the algorithm complexity into account.
+  The overhead involved in initiating a large number of particles for a set of parallel processors may take more time than the simulation itself. 
+
+2. Calibrate Gustafson’s law to your setup and discuss the outcome. Take your considerations on the algorithm complexity into account.
+
+  Gusafson's Law: 
+  Gustafson estimated the speedup S gained by using N processors (instead of just one) for a task with a serial fractions (which does not benefit from parallelism) as follows:
+  S=N+(1-N)s
 
 3. How does the parallel efficiency change over time if you study a long-running simulation?
+
+  There
 
 # Distributed Memory Simulation
 <!-- 

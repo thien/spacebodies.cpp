@@ -3,13 +3,13 @@ if [ ! -d build ]; then
   mkdir -p build
 fi
 # compile spacebodies code (Parallel)
-g++ -O3 --std=c++11 -fopenmp spacebodies.cpp -o build/spacebodies
+# g++ -O3 --std=c++11 -fopenmp spacebodies.cpp -o build/spacebodies
 
 # compile spacebodies code (Series)
-# g++ -O3 --std=c++11 spacebodies.cpp -o build/spacebodies 
+g++ -O3 --std=c++11 spacebodies.cpp -o build/spacebodies 
 
 
-./build/spacebodies 
+# ./build/spacebodies 
 
 # run spacebodies; note that it comes in the form of px py pz vx vy vz m
 
@@ -20,7 +20,7 @@ g++ -O3 --std=c++11 -fopenmp spacebodies.cpp -o build/spacebodies
 # ./build/spacebodies 0.002  \ 0.00001 0.0 0.0 -0.10001 0.0 0.0 5.0 \ -0.00001 0.0 0.0 0.1 0.0 0.0 5.0
 
 # collisions (floating point positions)
-# ./build/spacebodies 0.4201101 \ 0.1 0.1 0.1 -2 -2 -2 0.00000000001 \ -1 -1 -1 +2 +2 +2 0.00000000001
+./build/spacebodies 0.27502 \ 0.1 0.1 0.1 -2 -2 -2 0.00000000001 \ -1 -1 -1 +2 +2 +2 0.00000000001
 # ./build/spacebodies 0.15 \ 0.21 0.21 0.21 -1.0 -1.0 -1.0 0.0000000000001 \ 0.1 0.1 0.1 +1.0 +1.0 +1.0 0.0000000000001
 
 # collisions (whole)

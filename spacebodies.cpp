@@ -24,24 +24,24 @@
 #include <omp.h>
 
 // CONFIGS
-bool adaptiveTimeStepCheck = true; // If true, then use adaptive timestep
+bool adaptiveTimeStepCheck = false; // If true, then use adaptive timestep
 bool useParaview = false; // if true, write paraview related files.
 bool runParallel = true; // if set to parallel; then we run it in series.
 
-double defaultTimeStepSize = 0.0001;
+double defaultTimeStepSize = 0.001;
 double smallSizeLimit = 1e-8; // If variables are smaller than this then it might as well be zero.
 
 int numberOfIterations = 10; // When using the collision iteration (for different timesteps)
-bool isCsvCollisionWrite = false; // if set to true, it will generate a csv of two bodies and data to show their collision.
-bool collisionIterate = false; // iterates through multiple rounds, halving the timestep size as it goes.
+bool isCsvCollisionWrite = true; // if set to true, it will generate a csv of two bodies and data to show their collision.
+bool collisionIterate = true; // iterates through multiple rounds, halving the timestep size as it goes.
 
 bool isCsvBodyCountWrite = false; // if true, will write a csv that counts the number of bodies over time.
 
 // writer variables
 bool printBodiesInfo = false; // prints the bodies and their data
-bool printTimestampInfo = true;// print timestamp if true
+bool printTimestampInfo = false;// print timestamp if true
 
-double referenceDistance = 0.155; // If measuring error, use this value as the reference!
+double referenceDistance = -0.45; // If measuring error, use this value as the reference!
 
 // Tools to manage random spacebodies
 // (This is utilised by initiating spacebodies without any parameters.)
@@ -60,6 +60,7 @@ double seed = 12321321;
   double tFinal = 0;
   int NumberOfBodies = 0;
   double currentTimestep = 0;
+  double numberOfCores = 1;
 
 // CSV WRITER HANDLERS --------------------------
 
@@ -372,10 +373,11 @@ void collisionDebug(Body a, Body b){
     #pragma omp parallel default(none) private(j,k) shared(i, isCollided, smallSizeLimit, adaptiveTimeStepCheck, BeforeBodyCount, printBodiesInfo, t, bodies, currentTimestep, closestDistance, closestPair1, closestPair2, collisions, collisionPairCount, NumberOfBodies)
     // #pragma omp parallel
     {
+      
       // Calculate distances and forces for each body
       // Note that we can run this in SIMD since none of the 
       // iterations depends on the previous ones
-      #pragma omp for schedule(auto)
+      #pragma omp for schedule(guided)
       for (i=0; i<NumberOfBodies; i++) {
         // print bodies if enabled
         if (printBodiesInfo){bodies[i].print(i);}
@@ -383,6 +385,7 @@ void collisionDebug(Body a, Body b){
         for (j=0; j<i; j++) {
           if (i != j){ // make sure it doesn't interact with itself.
             // calculate distance
+            
             double distance = sqrt(
               (bodies[i].x[0]-bodies[j].x[0]) * (bodies[i].x[0]-bodies[j].x[0]) +
               (bodies[i].x[1]-bodies[j].x[1]) * (bodies[i].x[1]-bodies[j].x[1]) +
@@ -414,7 +417,7 @@ void collisionDebug(Body a, Body b){
         }
       }
     // }
-      // #pragma omp barrier
+      #pragma omp barrier
 
       #pragma omp single
       {
@@ -423,7 +426,7 @@ void collisionDebug(Body a, Body b){
           // update timestep if needed to accommodate the smallest distance
           currentTimestep = manipulateTimestep(currentTimestep, bodies[closestPair2], bodies[closestPair1], closestDistance);
         }
-                
+
         // initialising multiple threads will probably take longer.
         for (i=0; i<NumberOfBodies; i++){
           // update position and velocity of body
@@ -442,9 +445,9 @@ void collisionDebug(Body a, Body b){
         if ((BeforeBodyCount - NumberOfBodies) != 0){
           countWrite(std::to_string(t) + "," + std::to_string(NumberOfBodies) + "\n");
         }
-        t += currentTimestep;
       }
     } 
+   t += currentTimestep;
   }
 
   // check if the arguments are valid
@@ -490,7 +493,8 @@ void collisionDebug(Body a, Body b){
   }
 
 // INITIALISE FUNCTIONS -------------------------
-  
+
+
   // Generates a random set of bodies.
   void generateRandomBodies(Body* b){
 
@@ -581,7 +585,7 @@ void collisionDebug(Body a, Body b){
 
         // perform space loops.
         performSpaceBodies(bodies);
-        defaultTimeStepSize = defaultTimeStepSize / 2;
+        defaultTimeStepSize = defaultTimeStepSize / 10;
       }
 
       if (useParaview){closeParaviewVideoFile();}
