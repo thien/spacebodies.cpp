@@ -120,3 +120,16 @@ The machine used consists of Durham's MIRA machine, which is a 128 core intel xe
 <!-- 
 Design a strategy how to parallelise your code with MPI. No implementation is required, i.e. it is a
 gedankenexperiment. -->
+
+
+<!-- Mark Scheme
+
+- All three features of Step 1 are implemented correctly.
+- All three questions from Step 2 are answered correctly.
+- Quality of presentation of simulation outputs for Step 2 (graphs, snapshots and notably videos).
+- The code is parallelised including the statistics on the total number of objects.
+- All three questions from Step 4 are answered correctly.
+- A clear concept for MPI parallelisation is presented.
+- Quality of writing and quality of presentation of simulation outputs (graphs, snapshots).
+
+ -->

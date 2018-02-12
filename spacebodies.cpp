@@ -31,7 +31,7 @@ bool runParallel = true; // if set to parallel; then we run it in series.
 double defaultTimeStepSize = 0.001;
 double smallSizeLimit = 1e-8; // If variables are smaller than this then it might as well be zero.
 
-int numberOfIterations = 10; // When using the collision iteration (for different timesteps)
+int numberOfIterations = 20; // When using the collision iteration (for different timesteps)
 bool isCsvCollisionWrite = true; // if set to true, it will generate a csv of two bodies and data to show their collision.
 bool collisionIterate = true; // iterates through multiple rounds, halving the timestep size as it goes.
 
@@ -585,7 +585,7 @@ void collisionDebug(Body a, Body b){
 
         // perform space loops.
         performSpaceBodies(bodies);
-        defaultTimeStepSize = defaultTimeStepSize / 10;
+        defaultTimeStepSize = defaultTimeStepSize / 2;
       }
 
       if (useParaview){closeParaviewVideoFile();}
