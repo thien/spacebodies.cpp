@@ -32,9 +32,9 @@ The table below describes the information related to the two bodies used for the
 | 1 | +0.1 | +0.1 | +0.1 | -2.0 | -2.0 | -2.0 | $1e^{-11}$ |
 | 2 | -1.0 | -1.0 | -1.0 | +2.0 | +2.0 | +2.0 | $1e^{-11}$ |
 
-The bodies collide at $(x,y,z) = (0.155,0.155,0.155)$ at time $t=0.21$. The error is calculated between the position of the error of the new item. The following table shows the timestep used to calculate the collision, and the error value left over.
+The bodies collide at $(x,y,z) = (0.155,0.155,0.155)$ at time $t=0.21$. The error is calculated between the position of the error of the new item. The following table shows the timestep used to calculate the collision, and the error value left over. We calculate the error of only one dimension; $x$, as the others would follow a very similar pattern.
 
-| Timestep        | Error            | Collision? |
+| Timestep        | Error at $x$     | Collision? |
 |-----------------+------------------+------------|
 |0.001 (Adaptive) | -0.00000000351134| yes        |
 |0.000000005      | -0.00000000353880| yes        |
@@ -48,24 +48,43 @@ Our convergence scheme
 
 The adaptive timestep works suitably and utilises less timesteps than $ts=5e^-9$ by a significant margin, whilst having relatively comporable error residues. <!-- Will need to talk about calculating at earlier timesteps to see whether they collide.-->
 
-**Complexity**: Run your code for 10, 100, 1,000, 10,000 particles placed randomly in space.
+## Complexity
+<!-- 
+Run your code for 10, 100, 1,000, 10,000 particles placed randomly in space.
 Derive the runtime complexity of the code and compare it to your experimental data.
+-->
 
-Below describes the table that indicates the runtime of the 
+Under the assumption that the timestep and time limit is fixed, the most dominant function `updateBodies()` which utilises a nested loop that iterates through the number of bodies intiated. For each iteration, a force for a given body is calculated by comparing its position against every other body in space. This results in `updateBodies()` to run in $O(n^2)$. 
 
-The complexity of the code runs in $O(\frac{1}{2} n^2)$.
+Procedures have been taken to reduce the constant; Each body only calculates its force against bodies that precede them in the order of initiation i.e. Body $2$ calculates force from Body $1$ and Body $0$ whereas Body $3$ calculates from $0,1$ and $2$. A pseudocode describes this method:
 
-**Statistics**: Extend your code such that it keeps track of the number of bodies over time.
+    for (i=0; i<n):
+      for (j=0; j<i):
+        if (i != j):
+          distance = distance between body i and body j
+
+          m = i.mass*j.mass/distance/distance/distance;
+
+          for (k = 0; k < 3; k++):
+            i.force[k] += (i.x[k]-j.x[k]) * m;
+            j.force[k] += (i.x[k]-j.x[k]) * m;
+
+Whilst `updateBodies()` would continue to run in $O(n^2)$, the hidden constant would be drastically reduced to a factor of $\frac{1}{2}$ of the original number of calculations needed.
+
+## Statistics
+<!-- 
+Extend your code such that it keeps track of the number of bodies over time.
 Create a plot that shows how the total number of particles decreases over simulation time as
 particles merge.
+-->
 
 # Scaling Experiments
 
-Repeat the experiments from Step 2 to ensure that your modifications did not break the code. From
+<!-- Repeat the experiments from Step 2 to ensure that your modifications did not break the code. From
 hereon, create scaling plots for 10-10,000 particles. You are strongly encouraged to use a University
 machine for your plots that has at least 4 cores, i.e. you present a scaling plot than spans at least
 1,2,3 and 4 cores. If you have a more powerful machine at home, you are free to use this machine.
-Clarify explicitly in your report the machine specifica.
+Clarify explicitly in your report the machine specifica. -->
 
 The machine used consists of Durham's MIRA machine, which is a 128 core intel xeon distributed system. At runtime, the program consumes less than a megabyte of memory. 
 
@@ -79,6 +98,6 @@ the algorithm complexity into account.
 3. How does the parallel efficiency change over time if you study a long-running simulation?
 
 # Distributed Memory Simulation
-
+<!-- 
 Design a strategy how to parallelise your code with MPI. No implementation is required, i.e. it is a
-gedankenexperiment.
+gedankenexperiment. -->
