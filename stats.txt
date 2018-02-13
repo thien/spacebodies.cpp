@@ -1,0 +1,8 @@
+13/2/2018 19:37:07 - #Bodies: 10, Timestep: 0.01, Runtime: 0.24031s, p
+13/2/2018 19:37:08 - #Bodies: 10, Timestep: 0.01, Runtime: 0.008314s, s
+13/2/2018 19:38:25 - #Bodies: 10, Timestep: 1e-05, Runtime: 301.127s, p
+13/2/2018 19:38:31 - #Bodies: 10, Timestep: 1e-05, Runtime: 3.32177s, s
+13/2/2018 19:40:44 - #Bodies: 100, Timestep: 1e-05, Runtime: 756.242s, p
+13/2/2018 19:42:14 - #Bodies: 100, Timestep: 1e-05, Runtime: 88.7825s, s 
+13/2/2018 20:25:51 - #Bodies: 1000, Timestep: 1e-05, Runtime: 20318.4s, p (divide by 8 to get the actual time)
+13/2/2018 22:41:28 - #Bodies: 1000, Timestep: 1e-05, Runtime: 8134.58s, s
