@@ -58,8 +58,6 @@ The convergence order is $0.7152957794....$
 
 <!-- The numerical method is of order $p$ the there exists a number $C$ indepdendent of $h$ such that $ |u˜h − u| ≤ Chp$; at least for a sufficently small $h$.  -->
 
-Our convergence 
-
 ---
 
 The adaptive timestep works suitably and utilises less timesteps than $ts=5e^-9$ by a significant margin, whilst having relatively comporable error residues. <!-- Will need to talk about calculating at earlier timesteps to see whether they collide.-->

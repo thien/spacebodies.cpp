@@ -2,6 +2,10 @@
 if [ ! -d build ]; then
   mkdir -p build
 fi
+
+if [ ! -d paraview ]; then
+  mkdir -p paraview
+fi
 # compile spacebodies code (Parallel)
 # g++ -O3 --std=c++11 -fopenmp spacebodies.cpp -o build/spacebodies
 

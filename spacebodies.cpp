@@ -24,11 +24,11 @@
 #include <omp.h>
 
 // CONFIGS
-bool adaptiveTimeStepCheck = false; // If true, then use adaptive timestep
-bool useParaview = false; // if true, write paraview related files.
+bool adaptiveTimeStepCheck = true; // If true, then use adaptive timestep
+bool useParaview = true; // if true, write paraview related files.
 bool runParallel = true; // if set to parallel; then we run it in series.
 
-double defaultTimeStepSize = 0.000001;
+double defaultTimeStepSize = 0.001;
 double smallSizeLimit = 1e-8; // If variables are smaller than this then it might as well be zero.
 
 int numberOfIterations = 20; // When using the collision iteration (for different timesteps)
@@ -46,8 +46,8 @@ double referenceDistance = -0.45; // If measuring error, use this value as the r
 // Tools to manage random spacebodies
 // (This is utilised by initiating spacebodies without any parameters.)
 bool RandomBodies = true;
-int NumberOfRandomBodies = 10000;
-double randomSimTFinal = 1.0;
+int NumberOfRandomBodies = 10;
+double randomSimTFinal = 10.0;
 double fMin = -1.00; // random double min
 double fMax = 1.00; // random double max
 
@@ -62,6 +62,7 @@ double seed = 12321321;
   double currentTimestep = 0;
   double numberOfCores = 1;
   int timeStepsSinceLastPlot = 0;
+  std::ofstream videoFile;
 
 // CSV WRITER HANDLERS --------------------------
 
@@ -123,11 +124,9 @@ double seed = 12321321;
   * The file format is documented at http://www.vtk.org/wp-content/uploads/2015/04/file-formats.pdf
   */
 
-  std::ofstream videoFile;
-
   void printParaviewSnapshot(int counter, Body * bodies) {
     std::stringstream filename;
-    filename << "result-" << counter <<  ".vtp";
+    filename << "paraview/result-" << counter <<  ".vtp";
     std::ofstream out( filename.str().c_str() );
     out << "<VTKFile type=\"PolyData\" >" << std::endl
         << "<PolyData>" << std::endl
@@ -154,7 +153,7 @@ double seed = 12321321;
   }
 
   void openParaviewVideoFile() {
-    videoFile.open( "result.pvd" );
+    videoFile.open( "paraview/result.pvd" );
     videoFile << "<?xml version=\"1.0\"?>" << std::endl
               << "<VTKFile type=\"Collection\" version=\"0.1\" byte_order=\"LittleEndian\" compressor=\"vtkZLibDataCompressor\">" << std::endl
               << "<Collection>";
@@ -519,7 +518,7 @@ double seed = 12321321;
       // initialise the bodies values.
       for(int k = 0; k < 3; k++){
         b[i].x[k] = round( random_value[k] * 1000.0 ) / 1000.0; // round position to 3dp
-        b[i].v[k] = round( random_value[k+3]*10 * 1000.0 ) / 1000.0; // round velocity to 3dp
+        b[i].v[k] = round( random_value[k+3] * 1000.0 ) / 1000.0; // round velocity to 3dp
         b[i].force[k] = 0;
       }
       // make sure the mass has a positive value!
@@ -533,8 +532,16 @@ double seed = 12321321;
       NumberOfBodies = NumberOfRandomBodies;
       tFinal = randomSimTFinal;
       Body bodies[NumberOfBodies];
+
+      if (useParaview){
+        openParaviewVideoFile();
+        printParaviewSnapshot(0, bodies);
+      }
+      
       generateRandomBodies(bodies);
       performSpaceBodies(bodies);
+
+      if (useParaview){closeParaviewVideoFile();}
   }
 
   // Initiate runtime
@@ -585,7 +592,10 @@ double seed = 12321321;
         // set up values again
         setUp(argc,argv,bodies);
         
-        if (useParaview){openParaviewVideoFile();printParaviewSnapshot(0, bodies);}
+        if (useParaview){
+          openParaviewVideoFile();
+          printParaviewSnapshot(0, bodies);
+        }
 
         // perform space loops.
         performSpaceBodies(bodies);
