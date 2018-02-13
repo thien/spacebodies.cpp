@@ -34,11 +34,6 @@ The table below describes the information related to the two bodies used for the
 
 The bodies collide at $(x,y,z) = (0.155,0.155,0.155)$ at time $t=0.275$. The error is calculated through calculating the difference between the position of one body and the other body upon collision. The following table shows the timestep used to calculate the collision, and the error value left over. We calculate the error of only one dimension; $x$, as the other dimensions ($y,z$) would follow the same values.
 
-
-<!-- | Timestep $(h)$   | Error    | Position of $x$ |
-|-----------------+------------------+------------|
-|0.0001 (Adaptive) | 0.000199998| -0.4498        | -->
-
 | Timestep $h$ |  Error $\overline{u}_{h}$|  $x_{a}$ |  $x_{b}$ |  Ratio |  Steps |  Range |
 |------+------+------+------+-----+------+------+------|
 |Adaptive|0.000001997990|-0.449998|-0.450002|0.500503|1716457|0.000003994500|
