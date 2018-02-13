@@ -35,7 +35,7 @@ int numberOfIterations = 20; // When using the collision iteration (for differen
 bool isCsvCollisionWrite = true; // if set to true, it will generate a csv of two bodies and data to show their collision.
 bool collisionIterate = false; // iterates through multiple rounds, halving the timestep size as it goes.
 
-bool isCsvBodyCountWrite = false; // if true, will write a csv that counts the number of bodies over time.
+bool isCsvBodyCountWrite = true; // if true, will write a csv that counts the number of bodies over time.
 
 // writer variables
 bool printBodiesInfo = false; // prints the bodies and their data
