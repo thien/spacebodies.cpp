@@ -35,35 +35,37 @@ The table below describes the information related to the two bodies used for the
 The bodies collide at $(x,y,z) = (0.155,0.155,0.155)$ at time $t=0.275$. The error is calculated through calculating the difference between the position of one body and the other body upon collision. The following table shows the timestep used to calculate the collision, and the error value left over. We calculate the error of only one dimension; $x$, as the other dimensions ($y,z$) would follow the same values.
 
 
-| Timestep        | Error    | Position of $x$ |
+<!-- | Timestep $(h)$   | Error    | Position of $x$ |
 |-----------------+------------------+------------|
-|0.0001 (Adaptive) | 0.000199998| -0.4498        |
-|0.000078125000 | 0.000156250000 | -0.449844 |
-|0.000039062500 | 0.000078125000 | -0.449922 |
-|0.000019531300 | 0.000039062500 | -0.449961 |
-|0.000010000000 | 0.000020000000 | -0.44998 |
-|0.000003906250 | 0.000007812500 | -0.449992 |
-|0.000001953130 | 0.000003906250 | -0.449996 |
-|0.000001000000 | 0.000001999990 | -0.449998 |
-|0.000000610352 | 0.000001220720 | -0.449999 |
-|0.000000305176 | 0.000000610365 | -0.449999 |
-|0.000000152588 | 0.000000305098 | -0.45 |
+|0.0001 (Adaptive) | 0.000199998| -0.4498        | -->
 
+| Timestep $h$ |  Error $\overline{u}_{h}$|  $x_{a}$ |  $x_{b}$ |  Ratio |  Steps |  Range |
+|------+------+------+------+-----+------+------+------|
+|Adaptive|0.000001997990|-0.449998|-0.450002|0.500503|1716457|0.000003994500|
+|$10^{-6}/2^1$|0.000001999990|-0.449998|-0.450002|0.500003|275000|0.000003998500|
+|$10^{-6}/2^2$|0.000001000020|-0.449999|-0.450001|0.499992|550000|0.000001998520|
+|$10^{-6}/2^3$|0.000000499961|-0.45|-0.45|0.500039|1100000|0.000000998475|
+|$10^{-6}/2^4$|0.000000250068|-0.45|-0.45|0.499865|2200000|0.000000498564|
+|$10^{-6}/2^5$|0.000000125078|-0.45|-0.45|0.499688|4400000|0.000000248608|
+|$10^{-6}/2^6$|0.000000062134|-0.45|-0.45|0.502946|8800000|0.000000123183|
+|$10^{-6}/2^7$|0.000000031729|-0.45|-0.45|0.492452|17600000|0.000000061368|
+|$10^{-6}/2^8$|0.000000014415|-0.45|-0.45|0.541966|35200000|0.000000028684|
+|$10^{-6}/2^9$|0.000000006426|-0.45|-0.45|0.607915|70400000|0.000000012311|
+|$10^{-6}/2^{10}$|0.000000002519|-0.45|-0.45|0.775391|140800000|0.000000004178|
+
+
+
+(0.000000014415 - 0.000000006426) / (0.000000006426 - 0.000000002519)
+
+The convergence order is $0.7152957794....$
 
 ![A chart showing the the timestep used against the error produced. The chart shows a clear convergence.](chart.png)
 
+<!-- The numerical method is of order $p$ the there exists a number $C$ indepdendent of $h$ such that $ |u˜h − u| ≤ Chp$; at least for a sufficently small $h$.  -->
 
-<!-- 
-COLLISION @ t=0.275, Timestep: 0.001: Error: 0.002, Location: -0.448, Ratio: 0.5
-COLLISION @ t=0.275, Timestep: 0.0001: Error: 0.0002, Location: -0.4498, Ratio: 0.5
-COLLISION @ t=0.275, Timestep: 1e-05: Error: 2e-05, Location: -0.44998, Ratio: 0.5
-COLLISION @ t=0.275, Timestep: 1e-06: Error: 1.99999e-06, Location: -0.449998, Ratio: 0.500003
-COLLISION @ t=0.275, Timestep: 1e-07: Error: 2.00017e-07, Location: -0.45, Ratio: 0.499958
-COLLISION @ t=0.275, Timestep: 1e-08: Error: 1.97119e-08, Location: -0.45, Ratio: 0.507308
-COLLISION @ t=0.275, Timestep: 1e-09: Error: 7.58933e-09, Location: -0.45, Ratio: 0.131764
-COLLISION @ t=0.275, Timestep: 1e-10: Error: 1.51078e-08, Location: -0.45, Ratio: 0.0066191 -->
+Our convergence 
 
-Our convergence scheme 
+---
 
 The adaptive timestep works suitably and utilises less timesteps than $ts=5e^-9$ by a significant margin, whilst having relatively comporable error residues. <!-- Will need to talk about calculating at earlier timesteps to see whether they collide.-->
 
@@ -75,7 +77,9 @@ Derive the runtime complexity of the code and compare it to your experimental da
 
 Under the assumption that the timestep and time limit is fixed, the most dominant function `updateBodies()` which utilises a nested loop that iterates through the number of bodies intiated. For each iteration, a force for a given body is calculated by comparing its position against every other body in space. This results in `updateBodies()` to run in $O(n^2)$. 
 
-Procedures have been taken to reduce the constant; Each body only calculates its force against bodies that precede them in the order of initiation i.e. Body $2$ calculates force from Body $1$ and Body $0$ whereas Body $3$ calculates from $0,1$ and $2$. A pseudocode describes this method:
+Procedures have been taken to reduce the constant; Each body only calculates its force against bodies that precede them in the order of initiation i.e. Body $2$ calculates force from Body $1$ and Body $0$ whereas Body $3$ calculates from $0,1$ and $2$. 
+
+<!-- A pseudocode describes this method:
 
     for (i=0; i<n):
       for (j=0; j<i):
@@ -86,7 +90,7 @@ Procedures have been taken to reduce the constant; Each body only calculates its
 
           for (k = 0; k < 3; k++):
             i.force[k] += (i.x[k]-j.x[k]) * m;
-            j.force[k] += (i.x[k]-j.x[k]) * m;
+            j.force[k] += (i.x[k]-j.x[k]) * m; -->
 
 Whilst `updateBodies()` would continue to run in $O(n^2)$, the hidden constant would be drastically reduced to a factor of $\frac{1}{2}$ of the original number of calculations needed.
 
