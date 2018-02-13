@@ -24,11 +24,11 @@
 #include <omp.h>
 
 // CONFIGS
-bool adaptiveTimeStepCheck = true; // If true, then use adaptive timestep
+bool adaptiveTimeStepCheck = false; // If true, then use adaptive timestep
 bool useParaview = true; // if true, write paraview related files.
 bool runParallel = true; // if set to parallel; then we run it in series.
 
-double defaultTimeStepSize = 0.001;
+double defaultTimeStepSize = 0.00001;
 double smallSizeLimit = 1e-8; // If variables are smaller than this then it might as well be zero.
 
 int numberOfIterations = 20; // When using the collision iteration (for different timesteps)
@@ -46,7 +46,7 @@ double referenceDistance = -0.45; // If measuring error, use this value as the r
 // Tools to manage random spacebodies
 // (This is utilised by initiating spacebodies without any parameters.)
 bool RandomBodies = true;
-int NumberOfRandomBodies = 10;
+int NumberOfRandomBodies = 1000;
 double randomSimTFinal = 10.0;
 double fMin = -1.00; // random double min
 double fMax = 1.00; // random double max

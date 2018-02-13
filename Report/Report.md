@@ -49,7 +49,6 @@ The bodies collide at $(x,y,z) = (0.155,0.155,0.155)$ at time $t=0.275$. The err
 |$10^{-6}/2^{10}$|0.000000002519|-0.45|-0.45|0.775391|140800000|0.000000004178|
 
 
-
 (0.000000014415 - 0.000000006426) / (0.000000006426 - 0.000000002519)
 
 The convergence order is $0.7152957794....$
@@ -102,7 +101,7 @@ machine for your plots that has at least 4 cores, i.e. you present a scaling plo
 1,2,3 and 4 cores. If you have a more powerful machine at home, you are free to use this machine.
 Clarify explicitly in your report the machine specifica. -->
 
-The machine used consists of Durham's MIRA machine, which is a 128 core intel xeon distributed system. At runtime, the program consumes less than a megabyte of memory. 
+The machine used consists of an `Intel i7 3770k` processor at a 3.7Ghz clock speed, powering 4 cores and 8 threads. It utilises 32GB of memory and the storage consists of a SSD hooked up via SATA3.
 
 # Questions
 
