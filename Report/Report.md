@@ -14,7 +14,7 @@ i.e. it may not exceed six pages in total.
 # Numerical Experiments
 
 ## Consistency & Convergence
-
+<!-- 40 marks -->
 <!-- 
 Study two particles. Choose their velocity and initial position such
 that they directly collide with each other. Create a table where you document the
@@ -67,7 +67,7 @@ Run your code for 10, 100, 1,000, 10,000 particles placed randomly in space.
 Derive the runtime complexity of the code and compare it to your experimental data.
 -->
 
-Under the assumption that the timestep and time limit is fixed, the most dominant function `updateBodies()` which utilises a nested loop that iterates through the number of bodies intiated. For each iteration, a force for a given body is calculated by comparing its position against every other body in space. This results in `updateBodies()` to run in $O(n^2)$. 
+Under the assumption that the timestep and time limit is fixed, the most dominant function `updateBodies()` which utilises a nested loop that iterates through the number of bodies initiated. For each iteration, a force for a given body is calculated by comparing its position against every other body in space. This results in `updateBodies()` to run in $O(n^2)$. 
 
 Procedures have been taken to reduce the constant; Each body only calculates its force against bodies that precede them in the order of initiation i.e. Body $2$ calculates force from Body $1$ and Body $0$ whereas Body $3$ calculates from $0,1$ and $2$. 
 
@@ -104,26 +104,80 @@ Clarify explicitly in your report the machine specifica. -->
 The machine used consists of a `Intel i7 3770k` processor at a 3.7Ghz clock speed, powering 4 cores and 8 threads. It utilises 32GB of memory and the storage consists of a SSD hooked up via SATA3. It is using a fresh installation of Ubuntu and has no other major processes running.
 
 # Questions
+<!-- 30 marks -->
 
-1. How does the scalability for very brief simulation runs depend on the total particle count?
+1. __How does the scalability for very brief simulation runs depend on the total particle count?__
 
-  The overhead involved in initiating a large number of particles for a set of parallel processors may take more time than the simulation itself. 
+  There is a lot of overhead involved in initiating a loop for a set of parallel processors, to the extent that _may take more time than the actual simulation itself._ This may include each processor initiating their own set of variables.
 
-2. Calibrate Gustafson’s law to your setup and discuss the outcome. Take your considerations on the algorithm complexity into account.
+2. __Calibrate Gustafson’s law to your setup and discuss the outcome. Take your considerations on the algorithm complexity into account.__
 
   Gusafson's Law: 
   Gustafson estimated the speedup S gained by using N processors (instead of just one) for a task with a serial fractions (which does not benefit from parallelism) as follows:
   S=N+(1-N)s
 
-3. How does the parallel efficiency change over time if you study a long-running simulation?
+    I It depends on whether you fix the problem size.
+  I It hence depends on your purpose.
+  I It is crucial to clarify assumptions a priori.
+  I It is important to be aware of shortcomings.
 
-  There
+3. __How does the parallel efficiency change over time if you study a long-running simulation?__
+
+  - Parallelism on a single machine now depends on other factors
+    - makes more heat
+    - poor code
+    - transistor noise
+    - contingent on other factors on the machine
 
 # Distributed Memory Simulation
+<!-- 20 marks -->
 <!-- 
 Design a strategy how to parallelise your code with MPI. No implementation is required, i.e. it is a
 gedankenexperiment. -->
 
+## Assumptions and Setup
+
+- MPI is SPMD (Single program; multiple data)
+  - we check the ID to determine whether it is a master or a slave, we call master rank 0.
+  - the master has its own set of functions, and so does the master
+
+- Assume perfect zero latency theoretical model between ranks
+
+- For sake of simplicity the master-slave model is adopted; the master rank does not perform any major computation; this is distributed to the slaves
+
+- Every CPU in the MPI network will have a copy of the same code, but is allocated different sets of data in regards to the loop position they are to compute
+
+## Operation
+
+- master rank initiates a large array of bodies and `MPI_Bcast` to slaves
+- whilst this utilises a lot of data transmission, it is necessary as when calculating the force for a given body, it compares its position against every other body in the space.
+
+- for calculating the force
+  - Each rank will perform segments of the loop via `MPI_Scatter` (contingent on the number of bodies; it may be better given a large enough set (talking 100000+) to propagate them manually as the MPI buffers could heavily stress)
+    - they're passed the relevant information;
+      - master rank uses `MPI_send()` to a slave; slave receives using `MPI_recv()`
+      - verify data is received properly through checking the status of the received message (this applies to all messages transmitted; if it isn't a valid response then we should request the message again or have error handlers in place.)
+      - slaves have their own local variables that they can use to compute
+      - also `gets` relevant information from the global space such as the positions and velocities of bodies
+    - once the slave rank has finished computing the result, being the force increment for a body, are sent back to the master via `MPI_Reduce`
+  - will need to check that we have all the results!
+
+  - they also calculate
+    - non blocking communication between the slave and master to send/receive information about short distances between two bodies as we calculate the potential collision afterwards; we use an `immediate_send`.
+  
+- for collisions
+  - contingent on the number of collisions occurred
+  - this can be distributed to nodes but depends on how fast data can be transmitted to
+
+- for adaptive timestepping
+  - we can distribute the potential solution between nodes
+
+- for updating the bodies
+  - given enough bodies this can be distributed across the network too using a `MPI_Scatter` and `MPI_Reduce`
+
+- Process is repeated accordingly
+
+## Issues
 
 <!-- Mark Scheme
 
