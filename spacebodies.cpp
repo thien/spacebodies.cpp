@@ -28,18 +28,18 @@ bool adaptiveTimeStepCheck = false; // If true, then use adaptive timestep
 bool useParaview = false; // if true, write paraview related files.
 bool runParallel = true; // if set to parallel; then we run it in series.
 
-double defaultTimeStepSize = 0.001;
+double defaultTimeStepSize = 0.000001;
 double smallSizeLimit = 1e-8; // If variables are smaller than this then it might as well be zero.
 
 int numberOfIterations = 20; // When using the collision iteration (for different timesteps)
 bool isCsvCollisionWrite = true; // if set to true, it will generate a csv of two bodies and data to show their collision.
-bool collisionIterate = true; // iterates through multiple rounds, halving the timestep size as it goes.
+bool collisionIterate = false; // iterates through multiple rounds, halving the timestep size as it goes.
 
 bool isCsvBodyCountWrite = false; // if true, will write a csv that counts the number of bodies over time.
 
 // writer variables
 bool printBodiesInfo = false; // prints the bodies and their data
-bool printTimestampInfo = false;// print timestamp if true
+bool printTimestampInfo = true;// print timestamp if true
 
 double referenceDistance = -0.45; // If measuring error, use this value as the reference!
 
@@ -61,6 +61,7 @@ double seed = 12321321;
   int NumberOfBodies = 0;
   double currentTimestep = 0;
   double numberOfCores = 1;
+  int timeStepsSinceLastPlot = 0;
 
 // CSV WRITER HANDLERS --------------------------
 
@@ -116,28 +117,6 @@ double seed = 12321321;
       }
   };
 
-
-void collisionDebug(Body a, Body b){
-  if (isCsvCollisionWrite){
-    double pos = a.x[0]-referenceDistance;
-    
-    std::ostringstream strs;
-    strs << pos;
-    std::string errStr = strs.str();
-
-    std::ostringstream str2;
-    str2 << currentTimestep;
-    std::string ts = str2.str();
-
-    std::ostringstream str3;
-    str3 << currentTimestep / pos;
-    std::string t3 = str3.str();
-
-    std::cout << "COLLISION @ t="<< t<<", Timestep: "<< currentTimestep << ": Error: " << pos << ", Location: " << a.x[0] << "; " << b.x[0] << ", Ratio: " << (currentTimestep/pos) << std::endl;
-    collisionWrite(ts+ ", " + errStr + ","+t3+"\n");
-  }
-}
-
 // PARAVIEW FUNCTIONS ---------------------------
 
   /*
@@ -187,6 +166,31 @@ void collisionDebug(Body a, Body b){
   }
 
 // COLLISION HANDLERS ---------------------------
+
+  void collisionDebug(Body a, Body b){
+    if (isCsvCollisionWrite){
+      double pos = a.x[0]-referenceDistance;
+      
+      std::ostringstream strs;
+      strs << pos;
+      std::string errStr = strs.str();
+
+      std::ostringstream str2;
+      str2 << currentTimestep;
+      std::string ts = str2.str();
+
+      std::ostringstream str3;
+      str3 << currentTimestep / pos;
+      std::string t3 = str3.str();
+
+      // std::cout << "COLLISION @ t="<< t<<", Timestep: "<< currentTimestep << ": Error: " << pos << ", Location: " << a.x[0] << "; " << b.x[0] << ", Ratio: " << (currentTimestep/pos) <<", Steps: "<< timeStepsSinceLastPlot << ", Range: " << abs(b.x[0] - a.x[0]) << std::endl;
+
+      std::cout <<currentTimestep<<"," << pos << "," << a.x[0] << "," << b.x[0] << "," << (currentTimestep/pos) <<","<< timeStepsSinceLastPlot << "," << abs(b.x[0] - a.x[0]) << std::endl;
+      
+      collisionWrite(ts+ ", " + errStr + ","+t3+"\n");
+    }
+  }
+
 
   // Fuses two bodies together.
   Body joinBodies(Body x, Body y){
@@ -474,7 +478,7 @@ void collisionDebug(Body a, Body b){
   // Starts the space body simulations.
   int performSpaceBodies(Body* bodies){
   
-    int timeStepsSinceLastPlot = 0;
+    timeStepsSinceLastPlot = 0;
     const int plotEveryKthStep = 100;
    
     while (t<=tFinal) {
