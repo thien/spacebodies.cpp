@@ -67,6 +67,8 @@ Run your code for 10, 100, 1,000, 10,000 particles placed randomly in space.
 Derive the runtime complexity of the code and compare it to your experimental data.
 -->
 
+A seed for the Random Number Generator is used to ensure that the sequences of non-repeating numbers used to generate the random bodies are consistent and repeatable regardless of the body size.
+
 Under the assumption that the timestep and time limit is fixed, the most dominant function `updateBodies()` which utilises a nested loop that iterates through the number of bodies initiated. For each iteration, a force for a given body is calculated by comparing its position against every other body in space. This results in `updateBodies()` to run in $O(n^2)$. 
 
 Procedures have been taken to reduce the constant; Each body only calculates its force against bodies that precede them in the order of initiation i.e. Body $2$ calculates force from Body $1$ and Body $0$ whereas Body $3$ calculates from $0,1$ and $2$. 
@@ -93,6 +95,8 @@ Create a plot that shows how the total number of particles decreases over simula
 particles merge.
 -->
 
+Each randomly generated body (using the seed mentioned prior,) has a value ranging from -1 to 1 for all of its attributes $(s_x, s_y, s_z, v_x, v_y, v_z)$. The mass for each body would be infinitesimally small to reduce its effect upon force generation. We use a 10000 body simulation in order to increase the chances of collisions.
+
 # Scaling Experiments
 
 <!-- Repeat the experiments from Step 2 to ensure that your modifications did not break the code. From
@@ -101,14 +105,16 @@ machine for your plots that has at least 4 cores, i.e. you present a scaling plo
 1,2,3 and 4 cores. If you have a more powerful machine at home, you are free to use this machine.
 Clarify explicitly in your report the machine specifica. -->
 
-The machine used consists of a `Intel i7 3770k` processor at a 3.7Ghz clock speed, powering 4 cores and 8 threads. It utilises 32GB of memory and the storage consists of a SSD hooked up via SATA3. It is using a fresh installation of Ubuntu and has no other major processes running.
+To ensure that parallel modifications did not break the code, an MD5 sum of the paraview files computed from both parallel and serial simulations are used to verify any difference in results.
+
+The machine used consists of a `Intel i7 3770k` processor at a 3.7Ghz clock speed, powering 4 cores and 8 threads. It utilises 32GB of memory and the storage consists of a SSD hooked up via SATA3. It is using a fresh installation of Ubuntu 16.04 LTS and has no other additional programs running. Adaptive timestepping is not utilised as the serial simulation would take too much time, especially in the case for 10,000 bodies. The results are shown in the table below.
 
 # Questions
 <!-- 30 marks -->
 
 1. __How does the scalability for very brief simulation runs depend on the total particle count?__
 
-  There is a lot of overhead involved in initiating a loop for a set of parallel processors, to the extent that _may take more time than the actual simulation itself._ This may include each processor initiating their own set of variables.
+  There is a lot of overhead involved in initiating a loop for a set of parallel processors, to the extent that _may take more time than the actual simulation itself._ This may include each processor initiating their own set of variables. This was the case for 10 and 100 bodies, where it is evident that the initialisation of multiple threads affected the timing of the results in a negative manner.
 
 2. __Calibrate Gustafson’s law to your setup and discuss the outcome. Take your considerations on the algorithm complexity into account.__
 
