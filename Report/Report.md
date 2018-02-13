@@ -109,8 +109,14 @@ To ensure that parallel modifications did not break the code, an MD5 sum of the 
 
 The machine used consists of a `Intel i7 3770k` processor at a 3.7Ghz clock speed, powering 4 cores and __8 threads__. It utilises 32GB of memory and the storage consists of a SSD hooked up via SATA3. It is using a fresh installation of Ubuntu 16.04 LTS and has no other additional programs running. Adaptive timestepping is not utilised as the serial simulation would take too much time, especially in the case for 10,000 bodies. The results are shown in the table below.
 
-| Number of Bodies | CPU Time (Serial) | CPU Time (Parallel) | CPU Time (Per Core) |
-
+ | Type | CPU Time | Real Time (ms) | Real Time | 
+ |----+-------+--------+----------|
+ | Parallel | 10 | 301.127 | 37.640875 | 00:00:37 | 
+ | Serial | 10 | 3.32177 | 3.32177 | 00:00:03 | 
+ | Parallel | 100 | 756.242 | 94.53025 | 00:01:34 | 
+ | Serial | 100 | 88.7825 | 88.7825 | 00:01:28 | 
+ | Parallel | 1000 | 20318.4 | 2539.8 | 00:42:19 | 
+ | Serial | 1000 | 8134.58 | 8134.58 | 02:15:34 | 
 
 # Questions
 <!-- 30 marks -->
@@ -120,6 +126,8 @@ The machine used consists of a `Intel i7 3770k` processor at a 3.7Ghz clock spee
   There is a lot of overhead involved in initiating a loop for a set of parallel processors, to the extent that _may take more time than the actual simulation itself._ This may include each processor initiating their own set of variables. This was the case for 10 and 100 bodies, where it is evident that the initialisation of multiple threads affected the timing of the results in a negative manner.
 
 2. __Calibrate Gustafson’s law to your setup and discuss the outcome. Take your considerations on the algorithm complexity into account.__
+
+
 
   Gusafson's Law: 
   Gustafson estimated the speedup S gained by using N processors (instead of just one) for a task with a serial fractions (which does not benefit from parallelism) as follows:
