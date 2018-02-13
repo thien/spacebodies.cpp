@@ -17,22 +17,25 @@
 #include <cstdlib>
 #include <iostream>
 #include <ctime>
+
 #include <string>
 #include <math.h>
 #include <unordered_map>
 #include <fstream>
 #include <omp.h>
+#include <time.h>
+#include <iomanip>
 
 // CONFIGS
 bool adaptiveTimeStepCheck = false; // If true, then use adaptive timestep
 bool useParaview = true; // if true, write paraview related files.
 bool runParallel = true; // if set to parallel; then we run it in series.
 
-double defaultTimeStepSize = 0.00001;
+double defaultTimeStepSize = 0.01;
 double smallSizeLimit = 1e-8; // If variables are smaller than this then it might as well be zero.
 
 int numberOfIterations = 20; // When using the collision iteration (for different timesteps)
-bool isCsvCollisionWrite = true; // if set to true, it will generate a csv of two bodies and data to show their collision.
+bool isCsvCollisionWrite = false; // if set to true, it will generate a csv of two bodies and data to show their collision.
 bool collisionIterate = false; // iterates through multiple rounds, halving the timestep size as it goes.
 
 bool isCsvBodyCountWrite = true; // if true, will write a csv that counts the number of bodies over time.
@@ -46,7 +49,7 @@ double referenceDistance = -0.45; // If measuring error, use this value as the r
 // Tools to manage random spacebodies
 // (This is utilised by initiating spacebodies without any parameters.)
 bool RandomBodies = true;
-int NumberOfRandomBodies = 1000;
+int NumberOfRandomBodies = 10;
 double randomSimTFinal = 10.0;
 double fMin = -1.00; // random double min
 double fMax = 1.00; // random double max
@@ -63,6 +66,8 @@ double seed = 12321321;
   double numberOfCores = 1;
   int timeStepsSinceLastPlot = 0;
   std::ofstream videoFile;
+  clock_t tStart = clock();
+  int initialNumberOfBodies = 0;
 
 // CSV WRITER HANDLERS --------------------------
 
@@ -474,9 +479,50 @@ double seed = 12321321;
     return 0;
   }
 
+  // Saves running time
+  void timeHandler(){
+    clock_t tEnd = clock();
+
+    time_t t = time(0);   // get time now
+    struct tm * now = localtime( & t );
+    std::cout << now->tm_mday << '/'
+        << (now->tm_mon + 1) << '/'
+        << (now->tm_year + 1900) << " "
+        << std::setw(2) << std::setfill('0')
+        << now->tm_hour << ":"
+        << std::setw(2) << std::setfill('0')
+        << now->tm_min << ":"
+        << std::setw(2) << std::setfill('0')
+        << now->tm_sec
+        << std::endl;
+
+    double timeTaken = (tEnd - tStart) * 0.000001;
+
+    // load file to write to
+    std::ofstream outfile;
+
+    std::cout << numberOfCores << " Time taken: " << timeTaken << "s\n";
+
+    // save to file
+    outfile.open("timerResults.txt", std::ios_base::app);
+    outfile << now->tm_mday << '/'
+        << (now->tm_mon + 1) << '/'
+        << (now->tm_year + 1900) << " "
+        << std::setw(2) << std::setfill('0')
+        << now->tm_hour << ":"
+        << std::setw(2) << std::setfill('0')
+        << now->tm_min << ":"
+        << std::setw(2) << std::setfill('0')
+        << now->tm_sec
+        << " - "
+        << "#Bodies: " << initialNumberOfBodies
+        << ", Timestep: " << defaultTimeStepSize
+        << ", Runtime: " << timeTaken << "s\n";
+  }
+
   // Starts the space body simulations.
   int performSpaceBodies(Body* bodies){
-  
+    initialNumberOfBodies = NumberOfBodies;
     timeStepsSinceLastPlot = 0;
     const int plotEveryKthStep = 100;
    
@@ -491,12 +537,11 @@ double seed = 12321321;
         printParaviewSnapshot(timeStepsSinceLastPlot/plotEveryKthStep, bodies);
       }
     }
-    
+    timeHandler();
     return 0;
   }
 
 // INITIALISE FUNCTIONS -------------------------
-
 
   // Generates a random set of bodies.
   void generateRandomBodies(Body* b){
@@ -549,12 +594,6 @@ double seed = 12321321;
     // set random seed (should be different every time!)
     srand(seed);
 
-    // #pragma omp parallel
-    // {
-    //     // std::cout<<"sum="<<sum<<std::endl;
-    //     std::cout<<"threads="<<omp_get_num_threads()<<std::endl;
-    // }
-    
     // check for argument size
     if (argc > 1){
       RandomBodies = false;

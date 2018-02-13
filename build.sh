@@ -7,13 +7,16 @@ if [ ! -d paraview ]; then
   mkdir -p paraview
 fi
 # compile spacebodies code (Parallel)
-# g++ -O3 --std=c++11 -fopenmp spacebodies.cpp -o build/spacebodies
+g++ -O3 --std=c++11 -fopenmp spacebodies.cpp -o build/spacebodies
 
 # compile spacebodies code (Series)
-g++ -O3 --std=c++11 spacebodies.cpp -o build/spacebodies 
+# g++ -O3 --std=c++11 spacebodies.cpp -o build/spacebodies 
 
 
 # Run random bodies
+./build/spacebodies 
+
+g++ -O3 --std=c++11 spacebodies.cpp -o build/spacebodies 
 ./build/spacebodies 
 
 # run spacebodies; note that it comes in the form of px py pz vx vy vz m

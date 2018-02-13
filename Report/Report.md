@@ -101,7 +101,7 @@ machine for your plots that has at least 4 cores, i.e. you present a scaling plo
 1,2,3 and 4 cores. If you have a more powerful machine at home, you are free to use this machine.
 Clarify explicitly in your report the machine specifica. -->
 
-The machine used consists of an `Intel i7 3770k` processor at a 3.7Ghz clock speed, powering 4 cores and 8 threads. It utilises 32GB of memory and the storage consists of a SSD hooked up via SATA3.
+The machine used consists of a `Intel i7 3770k` processor at a 3.7Ghz clock speed, powering 4 cores and 8 threads. It utilises 32GB of memory and the storage consists of a SSD hooked up via SATA3. It is using a fresh installation of Ubuntu and has no other major processes running.
 
 # Questions
 
