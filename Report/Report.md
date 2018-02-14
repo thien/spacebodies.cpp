@@ -109,14 +109,20 @@ To ensure that parallel modifications did not break the code, an MD5 sum of the 
 
 The machine used consists of a `Intel i7 3770k` processor at a 3.7Ghz clock speed, powering 4 cores and __8 threads__. It utilises 32GB of memory and the storage consists of a SSD hooked up via SATA3. It is using a fresh installation of Ubuntu 16.04 LTS and has no other additional programs running. Adaptive timestepping is not utilised as the serial simulation would take too much time, especially in the case for 10,000 bodies. The results are shown in the table below.
 
- | Type | CPU Time | Real Time (ms) | Real Time | 
- |----+-------+--------+----------|
- | Parallel | 10 | 301.127 | 37.640875 | 00:00:37 | 
- | Serial | 10 | 3.32177 | 3.32177 | 00:00:03 | 
- | Parallel | 100 | 756.242 | 94.53025 | 00:01:34 | 
- | Serial | 100 | 88.7825 | 88.7825 | 00:01:28 | 
- | Parallel | 1000 | 20318.4 | 2539.8 | 00:42:19 | 
- | Serial | 1000 | 8134.58 | 8134.58 | 02:15:34 | 
+| Type | CPU Time | Real Time (ms) | Real Time | 
+|----+-------+--------+----------|
+| Parallel | 10 | 301.127 | 37.640875 | 00:00:37 | 
+| Serial | 10 | 3.32177 | 3.32177 | 00:00:03 | 
+| Parallel | 100 | 756.242 | 94.53025 | 00:01:34 | 
+| Serial | 100 | 88.7825 | 88.7825 | 00:01:28 | 
+| Parallel | 1000 | 20318.4 | 2539.8 | 00:42:19 | 
+| Serial | 1000 | 8134.58 | 8134.58 | 02:15:34 | 
+| Parallel | 10000 | 175009.01 | 21876.125 | 06:04:36 | 
+| Serial | 10000 | 81058.82 | 81058.82 | 22:30:58 | 
+
+| Body Count |	10	| 100	 |1000 |	10000 |
+|------------+------+------+-----+--------|
+| Performance Increase |	0.08824901121	| 0.9391967122	| 3.202842744	 | 3.705355496 |
 
 # Questions
 <!-- 30 marks -->
