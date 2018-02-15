@@ -1,6 +1,5 @@
 *.dSYM
 build/*
-*.csv
 paraview/*
 paraview-10/*
 paraview-100/*

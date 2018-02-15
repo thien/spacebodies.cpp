@@ -139,7 +139,7 @@ For larger sets of bodies, parallel programming shows a considerable improvement
 
 2. __Calibrate Gustafson’s law to your setup and discuss the outcome. Take your considerations on the algorithm complexity into account.__
 
-Gustafson estimated the speedup S gained by using N processors (instead of just one) for a task with a serial fraction(which does not benefit from parallelism) K as $S=N(1-N)K$. The table below shows the time measurements between serial and parallel times. From here, we can deduce K by looking at the time spent on serial operations as a fraction of the overall time.
+Gustafson estimated the speedup S gained by using N processors (instead of just one) for a task with a serial fraction(which does not benefit from parallelism) K as $S=N(1-N)K$. The table below shows the time measurements between serial and parallel times, measured via the CPU time. From here, we can deduce K by looking at the time spent on serial operations as a fraction of the overall time.
 
 | Number of Bodies | Threads | Serial Time | Parallel Time (Per Thread) | Total Time | K | 
 |------------------+---------+-------------+---------------+------------+---|
@@ -160,7 +160,9 @@ Gustafson estimated the speedup S gained by using N processors (instead of just 
 | 50000 | 7 | 0.049742 | 55.82085714 | 55.87059914 | 0.000146939975 | 
 | 50000 | 8 | 0.056105 | 54.79475 | 54.850855 | 0.0001151510654 |
 
-As the processor in question includes hyperthreading, it may obfuscate the results in some manner. The program depends on its floating point operations. The use of hyperthreading provides the illusion of 8 threads, whereas in reality, floating point registers are shared between a virtual thread and a physical core, reducing the effectiveness of the extra threads. This is shown in the graph below, where diminishing returns can be seen from 4 threads onwards.
+As the processor in question includes hyperthreading, it may obfuscate the results in some manner. The program depends on its floating point operations. The use of hyperthreading provides the illusion of 8 threads, whereas in reality, floating point registers are shared between a virtual thread and a physical core, reducing the effectiveness of the extra threads. This is shown in the graph below, where diminishing returns can be seen from 4 threads onwards. Therefore, we treat the rest of Gustafson's formula using 4 threads; representing the physical cores. 
+
+For 50,000 bodies $K=0.0002255879951$ is chosen from the 1 thread operation. This Results in S being $4 \times (1-3) \times 0.000225.. = 4.000675$. This law is respected when we compare the speedup from 4 threads against 1 thread, where the speedup is 3.77x. ('8 Threads' provides a speedup of 4.0097x which is within margin of error).
 
 ![Red represents 50,000 body operations, and blue represents 20,000 bodies.](20k-50k.png)
 
