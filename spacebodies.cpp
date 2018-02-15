@@ -35,10 +35,11 @@ double defaultTimeStepSize = 0.000001;
 double smallSizeLimit = 1e-8; // If variables are smaller than this then it might as well be zero.
 
 int numberOfIterations = 20; // When using the collision iteration (for different timesteps)
-bool isCsvCollisionWrite = true; // if set to true, it will generate a csv of two bodies and data to show their collision.
-bool collisionIterate = true; // iterates through multiple rounds, halving the timestep size as it goes.
+bool isCsvCollisionWrite = false; // if set to true, it will generate a csv of two bodies and data to show their collision.
+bool collisionIterate = false; // iterates through multiple rounds, halving the timestep size as it goes.
+bool writeTimerCount = false; //if true, saves runtime logs of every simulation
 
-bool isCsvBodyCountWrite = true; // if true, will write a csv that counts the number of bodies over time.
+bool isCsvBodyCountWrite = false; // if true, will write a csv that counts the number of bodies over time.
 
 // writer variables
 bool printBodiesInfo = false; // prints the bodies and their data
@@ -49,12 +50,14 @@ double referenceDistance = -1.95; // If measuring error, use this value as the r
 // Tools to manage random spacebodies
 // (This is utilised by initiating spacebodies without any parameters.)
 bool RandomBodies = true;
-int NumberOfRandomBodies = 100;
-double randomSimTFinal = 10.0;
+int NumberOfRandomBodies = 20000;
+double randomSimTFinal = 0.00001;
 double fMin = -1.00; // random double min
 double fMax = 1.00; // random double max
 
 double seed = 12321321;
+
+
 
 // SETUP VARIABLES-------------------------------
 
@@ -68,6 +71,14 @@ double seed = 12321321;
   std::ofstream videoFile;
   clock_t tStart = clock();
   int initialNumberOfBodies = 0;
+
+  // timer variables
+  clock_t genRandomBodiesStart = clock();
+  clock_t genRandomBodiesEnd = clock();
+  clock_t initEnd = clock();
+  clock_t parallelEndTime = clock();
+  clock_t taskEndTime = clock();  
+  
 
 // CSV WRITER HANDLERS --------------------------
 
@@ -378,8 +389,7 @@ double seed = 12321321;
     int collisionPairCount = 0;
     int BeforeBodyCount = NumberOfBodies;
 
-    #pragma omp parallel default(none) private(j,k) shared(i, isCollided, smallSizeLimit, adaptiveTimeStepCheck, BeforeBodyCount, printBodiesInfo, t, bodies, currentTimestep, closestDistance, closestPair1, closestPair2, collisions, collisionPairCount, NumberOfBodies)
-    // #pragma omp parallel
+    #pragma omp parallel default(none) private(j,k) shared(i, parallelEndTime, isCollided, smallSizeLimit, adaptiveTimeStepCheck, BeforeBodyCount, printBodiesInfo, t, bodies, currentTimestep, closestDistance, closestPair1, closestPair2, collisions, collisionPairCount, NumberOfBodies) num_threads(1)
     {
       
       // Calculate distances and forces for each body
@@ -426,7 +436,7 @@ double seed = 12321321;
       }
     // }
       #pragma omp barrier
-
+      parallelEndTime = clock();
       #pragma omp single
       {
         // There isn't really a point on parallelising this
@@ -456,6 +466,7 @@ double seed = 12321321;
       }
     } 
    t += currentTimestep;
+   taskEndTime = clock();
   }
 
   // check if the arguments are valid
@@ -485,43 +496,58 @@ double seed = 12321321;
 
     time_t t = time(0);   // get time now
     struct tm * now = localtime( & t );
-    std::cout << now->tm_mday << '/'
-        << (now->tm_mon + 1) << '/'
-        << (now->tm_year + 1900) << " "
-        << std::setw(2) << std::setfill('0')
-        << now->tm_hour << ":"
-        << std::setw(2) << std::setfill('0')
-        << now->tm_min << ":"
-        << std::setw(2) << std::setfill('0')
-        << now->tm_sec
-        << std::endl;
+    // std::cout << now->tm_mday << '/'
+    //     << (now->tm_mon + 1) << '/'
+    //     << (now->tm_year + 1900) << " "
+    //     << std::setw(2) << std::setfill('0')
+    //     << now->tm_hour << ":"
+    //     << std::setw(2) << std::setfill('0')
+    //     << now->tm_min << ":"
+    //     << std::setw(2) << std::setfill('0')
+    //     << now->tm_sec
+    //     << std::endl;
 
-    double timeTaken = (tEnd - tStart) * 0.000001;
+    double timeMult = 0.000001;
+    double timeTaken = (tEnd - tStart) * timeMult;
+
+    double randomBodyGenTime = (genRandomBodiesEnd - genRandomBodiesStart) * timeMult;
+    double initSetupTime = (initEnd - tStart) * timeMult;
+    double parallelTime = (parallelEndTime - initEnd) * timeMult;
+    double SerialPostTime = (taskEndTime - parallelEndTime) * timeMult;
+
+    std::cout <<"Init Setup Time: " << initSetupTime;
+    std::cout << "s, BodyGen Time: " << randomBodyGenTime;
+    std::cout << "s, Parallel Time: " << parallelTime;
+    std::cout << "s, SerialPost Time: " << SerialPostTime;
+    std::cout << "s\n";
 
     // load file to write to
     std::ofstream outfile;
 
-    std::cout << numberOfCores << " Time taken: " << timeTaken << "s\n";
+    std::cout << "Time taken: " << timeTaken << "s\n";
 
-    // save to file
-    outfile.open("timerResults.txt", std::ios_base::app);
-    outfile << now->tm_mday << '/'
-        << (now->tm_mon + 1) << '/'
-        << (now->tm_year + 1900) << " "
-        << std::setw(2) << std::setfill('0')
-        << now->tm_hour << ":"
-        << std::setw(2) << std::setfill('0')
-        << now->tm_min << ":"
-        << std::setw(2) << std::setfill('0')
-        << now->tm_sec
-        << " - "
-        << "#Bodies: " << initialNumberOfBodies
-        << ", Timestep: " << defaultTimeStepSize
-        << ", CPU Time: " << timeTaken << "s\n";
+    if (writeTimerCount){
+       // save to file
+      outfile.open("timerResults.txt", std::ios_base::app);
+      outfile << now->tm_mday << '/'
+          << (now->tm_mon + 1) << '/'
+          << (now->tm_year + 1900) << " "
+          << std::setw(2) << std::setfill('0')
+          << now->tm_hour << ":"
+          << std::setw(2) << std::setfill('0')
+          << now->tm_min << ":"
+          << std::setw(2) << std::setfill('0')
+          << now->tm_sec
+          << " - "
+          << "#Bodies: " << initialNumberOfBodies
+          << ", Timestep: " << defaultTimeStepSize
+          << ", CPU Time: " << timeTaken << "s\n";
+    }
   }
 
   // Starts the space body simulations.
   int performSpaceBodies(Body* bodies){
+    initEnd = clock();
     initialNumberOfBodies = NumberOfBodies;
     timeStepsSinceLastPlot = 0;
     const int plotEveryKthStep = 100;
@@ -583,7 +609,10 @@ double seed = 12321321;
         printParaviewSnapshot(0, bodies);
       }
       
+      genRandomBodiesStart = clock();
       generateRandomBodies(bodies);
+      genRandomBodiesEnd = clock();
+
       performSpaceBodies(bodies);
 
       if (useParaview){closeParaviewVideoFile();}

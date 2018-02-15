@@ -105,7 +105,7 @@ machine for your plots that has at least 4 cores, i.e. you present a scaling plo
 Clarify explicitly in your report the machine specifica. -->
 
 To ensure that parallel modifications did not break the code, an MD5 sum of the paraview files computed from both parallel and serial simulations are used to verify any difference in results.
-The personal computer used consists of a `Intel i7 3770k` processor at a 3.7Ghz clock speed, powering 4 cores (and 8 threads). It utilises 32GB of memory and the storage consists of a SSD hooked up via SATA3. It is using a fresh installation of Ubuntu 16.04 LTS and has no other additional programs running. Adaptive timestepping is not utilised as the serial simulation would take too much time, especially in the case for 10,000 bodies. The results are shown in the table below.
+The personal computer used consists of a `Intel i7 3770k` processor at a 3.7Ghz clock speed, powering 4 cores (and 8 threads). It utilises 32GB of memory and the storage consists of a SSD hooked up via SATA3. It is using a fresh installation of Ubuntu 16.04 LTS and has no other additional programs running. Adaptive timestepping is not utilised as the serial simulation would take too much time, especially in the case for 10,000 bodies. The results are shown in the table below. Parallel programs will utilise the full 4 cores.
 
 | Type | CPU Time | Real Time (ms) | Real Time | 
 |----+-------+--------+----------|
