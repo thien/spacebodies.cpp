@@ -1,3 +1,13 @@
 *.dSYM
 build/*
 *.csv
+paraview/*
+paraview-10/*
+paraview-100/*
+paraview-1000/*
+paraview-10000/*
+paraview-10p/*
+paraview-100p/*
+paraview-1000p/*
+paraview-10000p/*
+timerResults.txt

@@ -147,8 +147,6 @@ void updateBody() {
   t += timeStepSize;
 }
 
-
-
 int main(int argc, char** argv) {
   if (argc==1) {
     std::cerr << "please add the final time plus a list of object configurations as tuples px py pz vx vy vz m" << std::endl
