@@ -31,20 +31,20 @@ bool adaptiveTimeStepCheck = false; // If true, then use adaptive timestep
 bool useParaview = true; // if true, write paraview related files.
 bool runParallel = true; // if set to parallel; then we run it in series.
 
-double defaultTimeStepSize = 0.00001;
+double defaultTimeStepSize = 0.000001;
 double smallSizeLimit = 1e-8; // If variables are smaller than this then it might as well be zero.
 
 int numberOfIterations = 20; // When using the collision iteration (for different timesteps)
-bool isCsvCollisionWrite = false; // if set to true, it will generate a csv of two bodies and data to show their collision.
-bool collisionIterate = false; // iterates through multiple rounds, halving the timestep size as it goes.
+bool isCsvCollisionWrite = true; // if set to true, it will generate a csv of two bodies and data to show their collision.
+bool collisionIterate = true; // iterates through multiple rounds, halving the timestep size as it goes.
 
 bool isCsvBodyCountWrite = true; // if true, will write a csv that counts the number of bodies over time.
 
 // writer variables
 bool printBodiesInfo = false; // prints the bodies and their data
-bool printTimestampInfo = true;// print timestamp if true
+bool printTimestampInfo = false;// print timestamp if true
 
-double referenceDistance = -0.45; // If measuring error, use this value as the reference!
+double referenceDistance = -1.95; // If measuring error, use this value as the reference!
 
 // Tools to manage random spacebodies
 // (This is utilised by initiating spacebodies without any parameters.)
