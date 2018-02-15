@@ -32,7 +32,7 @@ The table below describes the information related to the two bodies used for the
 | 1 | +0.1 | +0.1 | +0.1 | -2.0 | -2.0 | -2.0 | $1e^{-11}$ |
 | 2 | -1.0 | -1.0 | -1.0 | +2.0 | +2.0 | +2.0 | $1e^{-11}$ |
 
-The bodies collide at $(x,y,z) = (0.155,0.155,0.155)$ at time $t=0.275$. The error is calculated through calculating the difference between the position of one body and the other body upon collision. The following table shows the timestep used to calculate the collision, and the error value left over. We calculate the error of only one dimension; $x$, as the other dimensions ($y,z$) would follow the same values.
+The bodies collide at $(x,y,z) = (0.155,0.155,0.155)$ at time $t=0.275$. The error is calculated through calculating the difference between the position of one body and the other body upon collision. The following table shows the timestep used to calculate the collision, and the error value left over. We calculate the error of only one dimension; $x$, as the other dimensions ($y,z$) would follow the same values. The adaptive timestep has a baseline value of $10^{-4}$ and reduces contingent to how close two bodies are close to colliding towards each other. Adaptive holds a hard limit of $10^{-10}$.
 
 | Timestep $h$ |  Error $\overline{u}_{h}$|  $x_{a}$ |  $x_{b}$ |  Ratio |  Steps |  Range |
 |------+------+------+------+-----+------+------+------|
@@ -48,18 +48,17 @@ The bodies collide at $(x,y,z) = (0.155,0.155,0.155)$ at time $t=0.275$. The err
 |$10^{-6}/2^9$|0.000000006426|-0.45|-0.45|0.607915|70400000|0.000000012311|
 |$10^{-6}/2^{10}$|0.000000002519|-0.45|-0.45|0.775391|140800000|0.000000004178|
 
+A numerical approximation is used
 
-(0.000000014415 - 0.000000006426) / (0.000000006426 - 0.000000002519)
+The order of accuracy $p$ can be obtained by taking the third last error $u_{h}$ to the expression $p = \log{\frac{u_{h} - u_{h/10}}{u_{h/10} - u_{h/100}}}$. Using the table, $p=0.7152957794...$, making our convergence rate $h^p$ = $(10^{-6}/2^8)^{0.7152957794...} = 9.67434210 \times 10^{-7}$. Implications show that the consistency is sub-linear as our $p<1$.
 
-The convergence order is $0.7152957794....$
+<!-- (0.000000014415 - 0.000000006426) / (0.000000006426 - 0.000000002519) -->
 
-![A chart showing the the timestep used against the error produced. The chart shows a clear convergence.](chart.png)
+We can see that the adaptive timestepping uses more iterations than $h=10^{-6}/2^1$ to reach the collision but produces a similar error, but this is due to the initial positions of the bodies. However, choosing a larger initial distance between the bodies would take a long period of time to produce results. 
 
-<!-- The numerical method is of order $p$ the there exists a number $C$ indepdendent of $h$ such that $ |u˜h − u| ≤ Chp$; at least for a sufficently small $h$.  -->
+![A chart showing the the timestep used against the error produced. The chart shows a clear convergence towards zero.](chart.png)
 
 ---
-
-The adaptive timestep works suitably and utilises less timesteps than $ts=5e^-9$ by a significant margin, whilst having relatively comporable error residues. <!-- Will need to talk about calculating at earlier timesteps to see whether they collide.-->
 
 ## Complexity
 <!-- 
@@ -67,7 +66,7 @@ Run your code for 10, 100, 1,000, 10,000 particles placed randomly in space.
 Derive the runtime complexity of the code and compare it to your experimental data.
 -->
 
-A seed for the Random Number Generator is used to ensure that the sequences of non-repeating numbers used to generate the random bodies are consistent and repeatable regardless of the body size.
+Note: _A seed for the Random Number Generator is used to ensure that the sequences of non-repeating numbers used to generate the random bodies are consistent and repeatable regardless of the body size. This is used to generate random but consistent  bodies._
 
 Under the assumption that the timestep and time limit is fixed, the most dominant function `updateBodies()` which utilises a nested loop that iterates through the number of bodies initiated. For each iteration, a force for a given body is calculated by comparing its position against every other body in space. This results in `updateBodies()` to run in $O(n^2)$. 
 
@@ -106,8 +105,7 @@ machine for your plots that has at least 4 cores, i.e. you present a scaling plo
 Clarify explicitly in your report the machine specifica. -->
 
 To ensure that parallel modifications did not break the code, an MD5 sum of the paraview files computed from both parallel and serial simulations are used to verify any difference in results.
-
-The machine used consists of a `Intel i7 3770k` processor at a 3.7Ghz clock speed, powering 4 cores and __8 threads__. It utilises 32GB of memory and the storage consists of a SSD hooked up via SATA3. It is using a fresh installation of Ubuntu 16.04 LTS and has no other additional programs running. Adaptive timestepping is not utilised as the serial simulation would take too much time, especially in the case for 10,000 bodies. The results are shown in the table below.
+The personal computer used consists of a `Intel i7 3770k` processor at a 3.7Ghz clock speed, powering 4 cores (and 8 threads). It utilises 32GB of memory and the storage consists of a SSD hooked up via SATA3. It is using a fresh installation of Ubuntu 16.04 LTS and has no other additional programs running. Adaptive timestepping is not utilised as the serial simulation would take too much time, especially in the case for 10,000 bodies. The results are shown in the table below.
 
 | Type | CPU Time | Real Time (ms) | Real Time | 
 |----+-------+--------+----------|
@@ -124,6 +122,13 @@ The machine used consists of a `Intel i7 3770k` processor at a 3.7Ghz clock spee
 |------------+------+------+-----+--------|
 | Performance Increase |	0.08824901121	| 0.9391967122	| 3.202842744	 | 3.705355496 |
 
+
+## Scaling Plot
+
+![A scaling plot of serial vs parallel runtime for various body sizes.](parallel_vs_serial_chart.png)
+
+For larger sets of bodies, parallel programming shows a considerable improvement against serial. The issue where the smaller set of bodies is answered in detail in Question 1.
+
 # Questions
 <!-- 30 marks -->
 
@@ -133,16 +138,14 @@ The machine used consists of a `Intel i7 3770k` processor at a 3.7Ghz clock spee
 
 2. __Calibrate Gustafson’s law to your setup and discuss the outcome. Take your considerations on the algorithm complexity into account.__
 
-
-
   Gusafson's Law: 
   Gustafson estimated the speedup S gained by using N processors (instead of just one) for a task with a serial fractions (which does not benefit from parallelism) as follows:
   S=N+(1-N)s
 
-    I It depends on whether you fix the problem size.
-  I It hence depends on your purpose.
-  I It is crucial to clarify assumptions a priori.
-  I It is important to be aware of shortcomings.
+   It depends on whether you fix the problem size.
+   It hence depends on your purpose.
+   It is crucial to clarify assumptions a priori.
+   It is important to be aware of shortcomings.
 
 3. __How does the parallel efficiency change over time if you study a long-running simulation?__
 
