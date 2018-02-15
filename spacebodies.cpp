@@ -27,7 +27,7 @@
 #include <iomanip>
 
 // CONFIGS
-bool adaptiveTimeStepCheck = false; // If true, then use adaptive timestep
+bool adaptiveTimeStepCheck = true; // If true, then use adaptive timestep
 bool useParaview = true; // if true, write paraview related files.
 bool runParallel = true; // if set to parallel; then we run it in series.
 
@@ -35,29 +35,28 @@ double defaultTimeStepSize = 0.000001;
 double smallSizeLimit = 1e-8; // If variables are smaller than this then it might as well be zero.
 
 int numberOfIterations = 20; // When using the collision iteration (for different timesteps)
-bool isCsvCollisionWrite = false; // if set to true, it will generate a csv of two bodies and data to show their collision.
+bool isCsvCollisionWrite = true; // if set to true, it will generate a csv of two bodies and data to show their collision.
+bool terminateOnCollision = false; // if set to true, terminate the program after a collision
 bool collisionIterate = false; // iterates through multiple rounds, halving the timestep size as it goes.
 bool writeTimerCount = false; //if true, saves runtime logs of every simulation
 
-bool isCsvBodyCountWrite = false; // if true, will write a csv that counts the number of bodies over time.
+bool isCsvBodyCountWrite = true; // if true, will write a csv that counts the number of bodies over time.
 
 // writer variables
 bool printBodiesInfo = false; // prints the bodies and their data
-bool printTimestampInfo = false;// print timestamp if true
+bool printTimestampInfo = true;// print timestamp if true
 
 double referenceDistance = -1.95; // If measuring error, use this value as the reference!
 
 // Tools to manage random spacebodies
 // (This is utilised by initiating spacebodies without any parameters.)
 bool RandomBodies = true;
-int NumberOfRandomBodies = 20000;
-double randomSimTFinal = 0.00001;
-double fMin = -1.00; // random double min
-double fMax = 1.00; // random double max
+int NumberOfRandomBodies = 10000;
+double randomSimTFinal = 200.0;
+double fMin = -1.0; // random double min
+double fMax = 1.0; // random double max
 
 double seed = 12321321;
-
-
 
 // SETUP VARIABLES-------------------------------
 
@@ -82,18 +81,22 @@ double seed = 12321321;
 
 // CSV WRITER HANDLERS --------------------------
 
-  std::ofstream csvBodyCountFile ("bodycount.csv");
-  std::ofstream csvCollisionFile ("collision.csv");
+  std::ofstream csvBodyCountFile;
+  std::ofstream csvCollisionFile;
 
   // helper functions to write to csv.
   void countWrite(std::string text){
     if (isCsvBodyCountWrite){
+      csvBodyCountFile.open("bodycount.csv", std::ios_base::app);
       csvBodyCountFile << text;
+      csvBodyCountFile.close();
     }
   }
   void collisionWrite(std::string text){
     if (isCsvCollisionWrite){
+      csvCollisionFile.open("collision.csv", std::ios_base::app);
       csvCollisionFile << text;
+      csvCollisionFile.close();
     }
   }
 
@@ -148,7 +151,7 @@ double seed = 12321321;
         << "<PolyData>" << std::endl
         << " <Piece NumberOfPoints=\"" << NumberOfBodies << "\">" << std::endl
         << "  <Points>" << std::endl
-        << "   <DataArray type=\"Float32\" NumberOfComponents=\"3\" format=\"ascii\">";
+        << "   <DataArray type=\"FloacurTS_pos_Str2\" NumberOfComponents=\"3\" format=\"ascii\">";
 
     for (int i=0; i<NumberOfBodies; i++) {
       out << bodies[i].x[0]
@@ -188,7 +191,7 @@ double seed = 12321321;
       
       std::ostringstream strs;
       strs << pos;
-      std::string errStr = strs.str();
+      std::string posString = strs.str();
 
       std::ostringstream str2;
       str2 << currentTimestep;
@@ -196,13 +199,13 @@ double seed = 12321321;
 
       std::ostringstream str3;
       str3 << currentTimestep / pos;
-      std::string t3 = str3.str();
+      std::string curTS_pos_Str = str3.str();
 
       // std::cout << "COLLISION @ t="<< t<<", Timestep: "<< currentTimestep << ": Error: " << pos << ", Location: " << a.x[0] << "; " << b.x[0] << ", Ratio: " << (currentTimestep/pos) <<", Steps: "<< timeStepsSinceLastPlot << ", Range: " << abs(b.x[0] - a.x[0]) << std::endl;
 
       std::cout <<currentTimestep<<"," << pos << "," << a.x[0] << "," << b.x[0] << "," << (currentTimestep/pos) <<","<< timeStepsSinceLastPlot << "," << abs(b.x[0] - a.x[0]) << std::endl;
       
-      collisionWrite(ts+ ", " + errStr + ","+t3+"\n");
+      collisionWrite(ts+ ", " + posString + ", "+curTS_pos_Str+"\n");
     }
   }
 
@@ -389,7 +392,7 @@ double seed = 12321321;
     int collisionPairCount = 0;
     int BeforeBodyCount = NumberOfBodies;
 
-    #pragma omp parallel default(none) private(j,k) shared(i, parallelEndTime, isCollided, smallSizeLimit, adaptiveTimeStepCheck, BeforeBodyCount, printBodiesInfo, t, bodies, currentTimestep, closestDistance, closestPair1, closestPair2, collisions, collisionPairCount, NumberOfBodies) num_threads(1)
+    #pragma omp parallel default(none) private(j,k) shared(i, parallelEndTime, isCollided, smallSizeLimit, adaptiveTimeStepCheck, BeforeBodyCount, printBodiesInfo, t, bodies, currentTimestep, closestDistance, closestPair1, closestPair2, collisions, collisionPairCount, NumberOfBodies)
     {
       
       // Calculate distances and forces for each body
@@ -507,26 +510,28 @@ double seed = 12321321;
     //     << now->tm_sec
     //     << std::endl;
 
-    double timeMult = 0.000001;
-    double timeTaken = (tEnd - tStart) * timeMult;
-
-    double randomBodyGenTime = (genRandomBodiesEnd - genRandomBodiesStart) * timeMult;
-    double initSetupTime = (initEnd - tStart) * timeMult;
-    double parallelTime = (parallelEndTime - initEnd) * timeMult;
-    double SerialPostTime = (taskEndTime - parallelEndTime) * timeMult;
-
-    std::cout <<"Init Setup Time: " << initSetupTime;
-    std::cout << "s, BodyGen Time: " << randomBodyGenTime;
-    std::cout << "s, Parallel Time: " << parallelTime;
-    std::cout << "s, SerialPost Time: " << SerialPostTime;
-    std::cout << "s\n";
-
-    // load file to write to
-    std::ofstream outfile;
-
-    std::cout << "Time taken: " << timeTaken << "s\n";
 
     if (writeTimerCount){
+
+      double timeMult = 0.000001;
+      double timeTaken = (tEnd - tStart) * timeMult;
+
+      double randomBodyGenTime = (genRandomBodiesEnd - genRandomBodiesStart) * timeMult;
+      double initSetupTime = (initEnd - tStart) * timeMult;
+      double parallelTime = (parallelEndTime - initEnd) * timeMult;
+      double SerialPostTime = (taskEndTime - parallelEndTime) * timeMult;
+
+      std::cout <<"Init Setup Time: " << initSetupTime;
+      std::cout << "s, BodyGen Time: " << randomBodyGenTime;
+      std::cout << "s, Parallel Time: " << parallelTime;
+      std::cout << "s, SerialPost Time: " << SerialPostTime;
+      std::cout << "s\n";
+
+      // load file to write to
+      std::ofstream outfile;
+
+      std::cout << "Time taken: " << timeTaken << "s\n";
+
        // save to file
       outfile.open("timerResults.txt", std::ios_base::app);
       outfile << now->tm_mday << '/'
@@ -556,7 +561,7 @@ double seed = 12321321;
       updateBodies(bodies);
       timeStepsSinceLastPlot++;
       // this is used to watch if the debug is called to check for collisions.
-      if (isCollided && isCsvCollisionWrite){
+      if (isCollided && isCsvCollisionWrite && terminateOnCollision){
         break;
       }
       if ((timeStepsSinceLastPlot%plotEveryKthStep==0) && useParaview) {
@@ -571,29 +576,21 @@ double seed = 12321321;
 
   // Generates a random set of bodies.
   void generateRandomBodies(Body* b){
-
-    // I dont understand why so many people upvoted this answer. It is mathematically incorrect. RAND_MAX is a very small number (typically 2^16). That means that from 23 bits of the floating point you make only 15 random. The others will be probably zero. You will indeed get random numbers in uniform distribution but of low precision. For example your random generator can generate 0.00001 and 0.00002 but cannot generate 0.000017. So you have a uniform distribution but of low precision (256 times less precision than the actual floating point). – DanielHsH Aug 14 '14 at 8:25
-
-    double maxFloat = 1.0;
-
     for (int i = 0; i < NumberOfBodies; i++){
       double random_value[7];
       for(int j = 0; j < 7; j++){
         // generate random double
-          double f = (double)rand() / RAND_MAX;
-          f = fMin + f * (fMax - fMin);
-
-        // spread range from -1 to 1 non inclusive and add to array
+        double f = (double)rand() / RAND_MAX;
+        f = fMin + f * (fMax - fMin);
         random_value[j] = f;
       }
       // initialise the bodies values.
       for(int k = 0; k < 3; k++){
-        b[i].x[k] = round( random_value[k] * 1000.0 ) / 1000.0; // round position to 3dp
-        b[i].v[k] = round( random_value[k+3] * 1000.0 ) / 1000.0; // round velocity to 3dp
+        b[i].x[k] = round( random_value[k] * 100.0 ) / 100.0; // round position to 1dp
+        b[i].v[k] = round( random_value[k+3] * 100.0 ) / 100.0; // round velocity to 1dp
         b[i].force[k] = 0;
       }
-      // make sure the mass has a positive value!
-      b[i].mass = fabs(random_value[6]);
+      b[i].mass = fabs(random_value[6]); // make sure the mass has a positive value!
     }
   }
 
@@ -676,7 +673,5 @@ double seed = 12321321;
       runRandomBodies();
     }
     // Close the files that were opened in memory.
-    if (isCsvBodyCountWrite){csvBodyCountFile.close();}
-    if (isCsvCollisionWrite){csvCollisionFile.close();}
     return 0;
   }

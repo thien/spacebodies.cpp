@@ -8,7 +8,7 @@ if [ ! -d paraview ]; then
 fi
 
 # use to calculate simulations between parallel and serial
-g++ -O3 --std=c++11 spacebodies.cpp -o build/spacebodies_p
+g++ -O3 --std=c++11 -fopenmp spacebodies.cpp -o build/spacebodies_p
 # g++ -O3 --std=c++11 spacebodies.cpp -o build/spacebodies_s
 ./build/spacebodies_p
 # ./build/spacebodies_s
