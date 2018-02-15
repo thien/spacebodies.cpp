@@ -105,7 +105,7 @@ machine for your plots that has at least 4 cores, i.e. you present a scaling plo
 Clarify explicitly in your report the machine specifica. -->
 
 To ensure that parallel modifications did not break the code, an MD5 sum of the paraview files computed from both parallel and serial simulations are used to verify any difference in results.
-The personal computer used consists of a `Intel i7 3770k` processor at a 3.7Ghz clock speed, powering 4 cores (and 8 threads). It utilises 32GB of memory and the storage consists of a SSD hooked up via SATA3. It is using a fresh installation of Ubuntu 16.04 LTS and has no other additional programs running. Adaptive timestepping is not utilised as the serial simulation would take too much time, especially in the case for 10,000 bodies. The results are shown in the table below. Parallel programs will utilise the full 4 cores.
+The personal computer used consists of a `Intel i7 3770k` processor at a 3.7Ghz clock speed, powering 4 cores (and 8 threads). It utilises 32GB of memory and the storage consists of a SSD hooked up via SATA3. It is using a fresh installation of Ubuntu 16.04 LTS and has no other additional programs running. Adaptive timestepping is not utilised as the serial simulation would take too much time, especially in the case for 10,000 bodies. The results are shown in the table below. Parallel programs will utilise the full 4 cores/8 threads.
 
 | Type | CPU Time | Real Time (ms) | Real Time | 
 |----+-------+--------+----------|
@@ -122,6 +122,7 @@ The personal computer used consists of a `Intel i7 3770k` processor at a 3.7Ghz 
 |------------+------+------+-----+--------|
 | Performance Increase |	0.08824901121	| 0.9391967122	| 3.202842744	 | 3.705355496 |
 
+It should be mentioned that the performance increase is measured by looking at the time taken to run the whole simulation. I talk about this in detail in Question 2.
 
 ## Scaling Plot
 
@@ -138,9 +139,30 @@ For larger sets of bodies, parallel programming shows a considerable improvement
 
 2. __Calibrate Gustafson’s law to your setup and discuss the outcome. Take your considerations on the algorithm complexity into account.__
 
-  Gusafson's Law: 
-  Gustafson estimated the speedup S gained by using N processors (instead of just one) for a task with a serial fractions (which does not benefit from parallelism) as follows:
-  S=N+(1-N)s
+Gustafson estimated the speedup S gained by using N processors (instead of just one) for a task with a serial fraction(which does not benefit from parallelism) K as $S=N(1-N)K$. The table below shows the time measurements between serial and parallel times. From here, we can deduce K by looking at the time spent on serial operations as a fraction of the overall time.
+
+| Number of Bodies | Threads | Serial Time | Parallel Time (Per Thread) | Total Time | K | 
+|------------------+---------+-------------+---------------+------------+---|
+| 20000 | 1 | 0.026708 | 35.1801 | 35.206808 | 0.0007044473923 | 
+| 20000 | 2 | 0.028066 | 17.64145 | 17.669516 | 0.0007420183465 | 
+| 20000 | 3 | 0.026398 | 12.09363333 | 12.12003133 | 0.0006748307414 | 
+| 20000 | 4 | 0.026561 | 9.3316 | 9.358161 | 0.0006612924385 | 
+| 20000 | 5 | 0.023714 | 9.29126 | 9.314974 | 0.0004690381061 | 
+| 20000 | 6 | 0.020047 | 9.262066667 | 9.282113667 | 0.0003273934802 | 
+| 20000 | 7 | 0.026727 | 9.008214286 | 9.034941286 | 0.0003931372192 | 
+| 20000 | 8 | 0.028578 | 8.795575 | 8.824153 | 0.0003793082384 | 
+| 50000 | 1 | 0.055767 | 219.885 | 219.940767 | 0.0002255879951 | 
+| 50000 | 2 | 0.054913 | 110.6975 | 110.752413 | 0.0002318856395 | 
+| 50000 | 3 | 0.057161 | 75.45833333 | 75.51549433 | 0.0002303044535 | 
+| 50000 | 4 | 0.055998 | 58.141 | 58.196998 | 0.0002340699913 | 
+| 50000 | 5 | 0.04972 | 57.4432 | 57.49292 | 0.0002192463943 | 
+| 50000 | 6 | 0.054618 | 56.70416667 | 56.75878467 | 0.0001566519646 | 
+| 50000 | 7 | 0.049742 | 55.82085714 | 55.87059914 | 0.000146939975 | 
+| 50000 | 8 | 0.056105 | 54.79475 | 54.850855 | 0.0001151510654 |
+
+As the processor in question includes hyperthreading, it may obfuscate the results in some manner. The program depends on its floating point operations. The use of hyperthreading provides the illusion of 8 threads, whereas in reality, floating point registers are shared between a virtual thread and a physical core, reducing the effectiveness of the extra threads. This is shown in the graph below, where diminishing returns can be seen from 4 threads onwards.
+
+![Red represents 50,000 body operations, and blue represents 20,000 bodies.](20k-50k.png)
 
    It depends on whether you fix the problem size.
    It hence depends on your purpose.
