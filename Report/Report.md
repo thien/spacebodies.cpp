@@ -128,7 +128,7 @@ It should be mentioned that the performance increase is measured by looking at t
 
 ![A scaling plot of serial vs parallel runtime for various body sizes.](parallel_vs_serial_chart.png)
 
-For larger sets of bodies, parallel programming shows a considerable improvement against serial. The issue where the smaller set of bodies is answered in detail in Question 1.
+For larger sets of bodies, parallel programming shows a considerable improvement against serial. The issue where the smaller set of bodies is answered in detail in Question 1. All simulations here have been recorded and displayed on paraview. The video is [here](https://www.youtube.com/watch?v=JAh_YskmOXc) [(https://www.youtube.com/watch?v=JAh_YskmOXc)](https://www.youtube.com/watch?v=JAh_YskmOXc) .
 
 # Questions
 <!-- 30 marks -->
