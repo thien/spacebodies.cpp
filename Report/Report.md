@@ -72,9 +72,7 @@ Since the mass is negligible, its effect on the force is also negligible. This h
 
 A numerical approximation is used by determining the order experimentally. We fix $p=1$ i.e. we have a linear convergence. We use the formula $|F^{(i+1)} - F^{(i)}| \leq C|F^{(i)} - F^{(i-1)}|^{p}$ to compute multiple constants $C_{i}$. The objective is to show that $C_{i}$ is roughly equal to $C$. 
 
-The C values  ($C = \frac{u_{h} - u_{h/10}}{u_{h/10} - u_{h/100}}$) computed this allows us to confirm that the code converges in a linear fashion.
-
-<!-- (0.000000014415 - 0.000000006426) / (0.000000006426 - 0.000000002519) -->
+The different C values ($C = \frac{u_{h} - u_{h/10}}{u_{h/10} - u_{h/100}}$) computed shows a approximation around $C \approx 2$. This allows us to confirm that the code converges in a linear fashion. 
 
 The adaptive timestep uses the base timestep of $10^{-6}$ to a possible maximum limit of $10^{-9}$. We can see that the adaptive timestep uses more iterations than $h=10^{-6}/2^1$ to reach the collision but produces a similar error, but this is due to the initial positions of the bodies. Choosing a larger range will help. However, choosing a larger initial distance between the bodies would take many more iterations to produce results for the static timesteps.
 
@@ -107,11 +105,11 @@ particles merge.
 
 ![A table showing bodies and collisions over time.](bod_time.png)
 
-Due to the nature of the bodies interacting with a force, collisions are unpredictable and are likely to fly away as they progress over time. For the sake of the simulation, each randomly generated body (using the seed mentioned prior) has a value ranging from -0.000001 to 0.000001 for all of its displacement attributes $(s_x, s_y, s_z)$ and its velocities ($v_x, v_y, v_z$). The mass for each body would be infinitesimally small ($10^{-11}$) to reduce its effect upon force generation. We use a 20,000 body simulation in order to increase the chances of collisions. Adaptive time stepping is enabled. The base timestep is $10^-7$.
+Due to the nature of the bodies interacting with a force, collisions are unpredictable and are likely to fly away as they progress over time. For the sake of the simulation, each randomly generated body (using the seed mentioned prior) has a value ranging from -0.000001 to 0.000001 for all of its displacement attributes $(s_x, s_y, s_z)$ and its velocities ($v_x, v_y, v_z$). The mass for each body would be infinitesimally small ($10^{-11}$) to reduce its effect upon force generation. We use a 20,000 body simulation in order to increase the chances of collisions. Adaptive time stepping is enabled. The base timestep is $10^{-7}$.
 
 A good portion of bodies are merged upon spawning; the first time step shows a considerable number of collisions due to the high probabilistic outcomes as the density of bodies in a small area affords. Simulating the outcome using a larger range makes it unlikely for a collision to occur.
 
-Issues were faced in terms of running the simulation on Paraview due to the massive range of values that can be produced as a consequence of values in the range (from $-10^-8$ to $10^21$). It is also noted that in the event of collisions during collisions, it reduces the number of operations as bodies are fused, improving the running time.
+Issues were faced in terms of running the simulation on Paraview due to the wide  spectrum of values produced; i.e values are range from $-10^{-8}$ to $10^{21}$. It is also noted that in the event of collisions during collisions, it reduces the number of operations as bodies are fused, improving the running time.
 
 # Scaling Experiments
 
@@ -120,6 +118,8 @@ hereon, create scaling plots for 10-10,000 particles. You are strongly encourage
 machine for your plots that has at least 4 cores, i.e. you present a scaling plot than spans at least
 1,2,3 and 4 cores. If you have a more powerful machine at home, you are free to use this machine.
 Clarify explicitly in your report the machine specifica. -->
+
+![A scaling plot of serial vs parallel runtime for various body sizes.](parallel_vs_serial_chart.png)
 
 To ensure that parallel modifications did not break the code, an MD5 sum of the Paraview files computed from both parallel and serial simulations are used to verify any difference in results.
 The personal computer used consists of a `Intel i7 3770k` processor at a 3.7Ghz clock speed, powering 4 cores (and 8 threads). It utilises 32GB of memory and the storage consists of a SSD hooked up via SATA3. It is using a fresh installation of Ubuntu 16.04 LTS and has no other additional programs running. Adaptive timestepping is not utilised as the serial simulation would take too much time, especially in the case for 10,000 bodies. The results are shown in the table below. Parallel programs will utilise the full 4 cores/8 threads.
@@ -143,8 +143,6 @@ It should be mentioned that the performance increase is measured by looking at t
 
 ## Scaling Plot
 
-![A scaling plot of serial vs parallel runtime for various body sizes.](parallel_vs_serial_chart.png)
-
 For larger sets of bodies, parallel programming shows a considerable improvement against serial. The issue where the smaller set of bodies is answered in detail in Question 1. All simulations here have been recorded and displayed on Paraview. The video is [here](https://www.youtube.com/watch?v=JAh_YskmOXc) [(https://www.youtube.com/watch?v=JAh_YskmOXc)](https://www.youtube.com/watch?v=JAh_YskmOXc) .
 
 # Questions
@@ -157,9 +155,6 @@ For larger sets of bodies, parallel programming shows a considerable improvement
 2. __Calibrate Gustafson’s law to your setup and discuss the outcome. Take your considerations on the algorithm complexity into account.__
 
   Gustafson estimated the speed-up S gained by using N processors (instead of just one) for a task with a serial fraction(which does not benefit from parallelism) K as $S=N+(1-N)K$. The table below shows the time measurements between serial and parallel times, measured via the CPU time. From here, we can deduce K by looking at the time spent on serial operations as a fraction of the overall time.
-
-  As the processor in question includes hyper-threading, it may obfuscate the results in some manner. The program depends on its floating point operations. The use of hyper-threading provides the illusion of 8 threads, whereas in reality, floating point registers are shared between a virtual thread and a physical core, reducing the effectiveness of the extra threads. This is shown in the graph below, where diminishing returns can be seen from 4 threads onwards. We can see this in Figure 3, where the results reach diminishing returns after 4 threads. Therefore, we treat the rest of Gustafson's formula using 4 threads; representing the physical cores.
-
 
   | Number of Bodies | Threads | Serial Time | Parallel Time | Total Time | K | 
   |------------------+---------+-------------+---------------+------------+---|
@@ -180,6 +175,7 @@ For larger sets of bodies, parallel programming shows a considerable improvement
   | 50000 | 7 | 0.049742 | 55.82085714 | 55.87059914 | 0.000146939975 | 
   | 50000 | 8 | 0.056105 | 54.79475 | 54.850855 | 0.0001151510654 |
 
+ As the processor in question includes hyper-threading, it may obfuscate the results in some manner. The program depends on its floating point operations. The use of hyper-threading provides the illusion of 8 threads, whereas in reality, floating point registers are shared between a virtual thread and a physical core, reducing the effectiveness of the extra threads. This is shown in the graph below, where diminishing returns can be seen from 4 threads onwards. We can see this in Figure 3, where the results reach diminishing returns after 4 threads. Therefore, we treat the rest of Gustafson's formula using 4 threads; representing the physical cores.
 
   ![Red represents 50,000 body operations, and blue represents 20,000 bodies.](20k-50k.png)
 
