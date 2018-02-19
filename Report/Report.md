@@ -27,12 +27,12 @@ in terms of time step count.
 
 The table below describes the information related to the two bodies used for the collision experiment.
 
-| Body # |  $s(x)$ |  $s(y)$ |  $s(z)$ |  $v(x)$ |  $v(y)$ |  $v(z)$ | Mass |
+| Body ID |  $s(x)$ |  $s(y)$ |  $s(z)$ |  $v(x)$ |  $v(y)$ |  $v(z)$ | Mass |
 |--------+---------+---------+---------+---------+---------+---------+------|
 | 1 | +0.1 | +0.1 | +0.1 | -2.0 | -2.0 | -2.0 | $1e^{-11}$ |
 | 2 | -1.0 | -1.0 | -1.0 | +2.0 | +2.0 | +2.0 | $1e^{-11}$ |
 
-Since the mass is miniscule, its effect on the force is negligible, allowing us to predict where the bodies will collide easily; it occurs at $(x,y,z) = (-0.45 -0.45 -0.45)$ at time $t=0.2$. The error is calculated through calculating the difference between the position of one body and the intended position upon collision. The following table shows the timestep used, and the error value left over. We calculate the error of only one dimension; $x$, as the other dimensions ($y,z$) would follow the same values. The adaptive timestep has a baseline value of $10^{-4}$ and reduces contingent to how close two bodies are close to colliding towards each other. Adaptive holds a hard limit of $10^{-10}$.
+Since the mass is negligible, its effect on the force is also negligible. This helps to easily predict where the bodies will collide; it occurs at $(x,y,z) = (-0.45 -0.45 -0.45)$ at time $t=0.2$. The error is calculated through calculating the difference between the position of one body and the intended position upon collision. The following table shows the timestep used, and the error value left over. We calculate the error of only one dimension; $x$, as the other dimensions ($y,z$) would follow the same values. The adaptive timestep has a baseline value of $10^{-4}$ and reduces contingent to how close two bodies are close to colliding towards each other. Adaptive holds a hard limit of $10^{-10}$.
 
 <!-- | Timestep $h$ |  Error $\overline{u}_{h}$ |  $x_{a}$ |  $x_{b}$ |  Ratio |  Steps | Error Range | C |
 |------+------+------+------+-----+------+------+------|
@@ -44,7 +44,7 @@ Since the mass is miniscule, its effect on the force is negligible, allowing us 
 |$10^{-6}/2^5$|0.000000125078|-0.45|-0.45|0.499688|4400000|0.000000248608|1.985730196|
 |$10^{-6}/2^6$|0.000000062134|-0.45|-0.45|0.502946|8800000|0.000000123183|2.070195922| -->
 
-| Timestep $h$ |  Error $\overline{u}_{h}$ |  $x_{a}$ |  $x_{b}$ |  Steps | Error Range | C |
+| Timestep $i$ |  Error $F$ |  $x_{a}$ |  $x_{b}$ |  Steps | Error Range | C |
 |------+------+------+------+-----+------+------|
 |Adaptive|0.000001997990|-0.449998|0.500503|1716457|0.000003994500|N/A|
 |$10^{-6}/2^1$|0.000001999990|-0.449998|0.500003|275000|0.000003998500|N/A|
@@ -70,13 +70,13 @@ Since the mass is miniscule, its effect on the force is negligible, allowing us 
 |$10^{-6}/2^9$|0.000000006426|-0.45|-0.45|0.607915|70400000|0.000000012311|
 |$10^{-6}/2^{10}$|0.000000002519|-0.45|-0.45|0.775391|140800000|0.000000004178| -->
 
-A numerical approximation is used by determining the order experimentally. We fix $p=1$ i.e. we have a linear convergence. We use the formula $|F^{i+1} - F^{\inf}| < C|F^{(i)} - F^{\inf}|^{p}$ to compute multiple constants $C_{i}$. The objective is to show that $C_{i}$ is roughly equal to $C$. 
+A numerical approximation is used by determining the order experimentally. We fix $p=1$ i.e. we have a linear convergence. We use the formula $|F^{(i+1)} - F^{(i)}| \leq C|F^{(i)} - F^{(i-1)}|^{p}$ to compute multiple constants $C_{i}$. The objective is to show that $C_{i}$ is roughly equal to $C$. 
 
-The C values  ($C = \frac{u_{h} - u_{h/10}}{u_{h/10} - u_{h/100}}$) computed from the table are averaged to produce $C = 2.0112$. Knowing that a consistent $C$ is computed, this allows us to confirm that the code converges in a linear fashion.
+The C values  ($C = \frac{u_{h} - u_{h/10}}{u_{h/10} - u_{h/100}}$) computed this allows us to confirm that the code converges in a linear fashion.
 
 <!-- (0.000000014415 - 0.000000006426) / (0.000000006426 - 0.000000002519) -->
 
-We can see that the adaptive timestepping uses more iterations than $h=10^{-6}/2^1$ to reach the collision but produces a similar error, but this is due to the initial positions of the bodies. However, choosing a larger initial distance between the bodies would take a long period of time to produce results. 
+The adaptive timestep uses the base timestep of $10^{-6}$ to a possible maximum limit of $10^{-9}$. We can see that the adaptive timestep uses more iterations than $h=10^{-6}/2^1$ to reach the collision but produces a similar error, but this is due to the initial positions of the bodies. Choosing a larger range will help. However, choosing a larger initial distance between the bodies would take many more iterations to produce results for the static timesteps.
 
 <!-- Talk about how the adaptive timestepping is calculated -->
 <!-- 
@@ -94,9 +94,9 @@ Note: _A seed for the Random Number Generator is used to ensure that the sequenc
 
 Under the assumption that the timestep and time limit is fixed, the most dominant function `updateBodies()` which utilises a nested loop that iterates through the number of bodies initiated. For each iteration, a force for a given body is calculated by comparing its position against every other body in space. This results in `updateBodies()` to run in $O(n^2)$. 
 
-Procedures have been taken to reduce the constant; Each body only calculates its force against bodies that precede them in the order of initiation i.e. Body $2$ calculates force from Body $1$ and Body $0$ whereas Body $3$ calculates from $0,1$ and $2$. 
+Procedures have been taken to reduce the constant; Each body only calculates its force against bodies that precede them in the order of initiation i.e. Body $2$ calculates force from Body $1$ and Body $0$ whereas Body $3$ calculates from $0,1$ and $2$. Various other improvements tend to consist of trading computation time for storage.
 
-Whilst `updateBodies()` would continue to run in $O(n^2)$, the hidden constant would be drastically reduced to a factor of $\frac{1}{2}$ of the original number of calculations needed.
+Whilst `updateBodies()` would continue to run in $O(n^2)$, the hidden constant would be drastically reduced to a factor of $\frac{1}{2}$ of the original number of calculations needed. There are also various optimisations are the compiler level that are not considered during the calculation, making it more difficult to create a fair comparison between real data and theoretical outcomes.
 
 ## Statistics
 <!-- 
@@ -107,9 +107,9 @@ particles merge.
 
 ![A table showing bodies and collisions over time.](bod_time.png)
 
-Due to the nature of the bodies interacting with a force, collisions are unpredictible and likely to fly away as they progress over time. For the sake of the simulation, each randomly generated body (using the seed mentioned prior) has a value ranging from -0.000001 to 0.000001 for all of its displacement attributes $(s_x, s_y, s_z)$. and its velocities ($v_x, v_y, v_z$) are none. The mass for each body would be infinitesimally small ($10^-11$) to reduce its effect upon force generation. We use a 20,000 body simulation in order to increase the chances of collisions. Adaptive time stepping is enabled. The base timestep is $10^-7$.
+Due to the nature of the bodies interacting with a force, collisions are unpredictable and are likely to fly away as they progress over time. For the sake of the simulation, each randomly generated body (using the seed mentioned prior) has a value ranging from -0.000001 to 0.000001 for all of its displacement attributes $(s_x, s_y, s_z)$ and its velocities ($v_x, v_y, v_z$). The mass for each body would be infinitesimally small ($10^{-11}$) to reduce its effect upon force generation. We use a 20,000 body simulation in order to increase the chances of collisions. Adaptive time stepping is enabled. The base timestep is $10^-7$.
 
-A good portion of bodies are merged upon spawning; the first time step shows a considerable number of collisions due to the high probablistic outcomes as the density of bodies in a small area affords. Simulating the outcome using a larger range makes it unlikely for a collision to occur. Issues were faced in terms of running the simulation on paraview due to the massive range of values that can be produced as a consequence of values in the range (from $-10^-8$ to $10^21$.).
+A good portion of bodies are merged upon spawning; the first time step shows a considerable number of collisions due to the high probabilistic outcomes as the density of bodies in a small area affords. Simulating the outcome using a larger range makes it unlikely for a collision to occur. Issues were faced in terms of running the simulation on Paraview due to the massive range of values that can be produced as a consequence of values in the range (from $-10^-8$ to $10^21$). It is also noted that in the event of collisions during collisions, it reduces the number of operations as bodies are fused, improving the running time.
 
 # Scaling Experiments
 
@@ -119,7 +119,7 @@ machine for your plots that has at least 4 cores, i.e. you present a scaling plo
 1,2,3 and 4 cores. If you have a more powerful machine at home, you are free to use this machine.
 Clarify explicitly in your report the machine specifica. -->
 
-To ensure that parallel modifications did not break the code, an MD5 sum of the paraview files computed from both parallel and serial simulations are used to verify any difference in results.
+To ensure that parallel modifications did not break the code, an MD5 sum of the Paraview files computed from both parallel and serial simulations are used to verify any difference in results.
 The personal computer used consists of a `Intel i7 3770k` processor at a 3.7Ghz clock speed, powering 4 cores (and 8 threads). It utilises 32GB of memory and the storage consists of a SSD hooked up via SATA3. It is using a fresh installation of Ubuntu 16.04 LTS and has no other additional programs running. Adaptive timestepping is not utilised as the serial simulation would take too much time, especially in the case for 10,000 bodies. The results are shown in the table below. Parallel programs will utilise the full 4 cores/8 threads.
 
 | Type | CPU Time | Real Time (ms) | Real Time | 
@@ -143,66 +143,55 @@ It should be mentioned that the performance increase is measured by looking at t
 
 ![A scaling plot of serial vs parallel runtime for various body sizes.](parallel_vs_serial_chart.png)
 
-For larger sets of bodies, parallel programming shows a considerable improvement against serial. The issue where the smaller set of bodies is answered in detail in Question 1. All simulations here have been recorded and displayed on paraview. The video is [here](https://www.youtube.com/watch?v=JAh_YskmOXc) [(https://www.youtube.com/watch?v=JAh_YskmOXc)](https://www.youtube.com/watch?v=JAh_YskmOXc) .
+For larger sets of bodies, parallel programming shows a considerable improvement against serial. The issue where the smaller set of bodies is answered in detail in Question 1. All simulations here have been recorded and displayed on Paraview. The video is [here](https://www.youtube.com/watch?v=JAh_YskmOXc) [(https://www.youtube.com/watch?v=JAh_YskmOXc)](https://www.youtube.com/watch?v=JAh_YskmOXc) .
 
 # Questions
 <!-- 30 marks -->
 
 1. __How does the scalability for very brief simulation runs depend on the total particle count?__
 
-  There is a lot of overhead involved in initiating a loop for a set of parallel processors, to the extent that _may take more time than the actual simulation itself._ This may include each processor initiating their own set of variables. This was the case for 10 and 100 bodies, where it is evident that the initialisation of multiple threads affected the timing of the results in a negative manner.
+  There is a lot of overhead involved in initiating a set of threads for it to be utilised for parallel operations, to the extent that _may take more time than the actual simulation itself._ This may include each thread initiating their own set of variables, and initiation of a shared set of memory. This was the case for 10 and 100 bodies simulation, where it is evident that parallelisation affected the timing of the results in a negative manner. For a small operation, it is often better to compute the operation serially.
 
 2. __Calibrate Gustafson’s law to your setup and discuss the outcome. Take your considerations on the algorithm complexity into account.__
 
-Gustafson estimated the speedup S gained by using N processors (instead of just one) for a task with a serial fraction(which does not benefit from parallelism) K as $S=N+(1-N)K$. The table below shows the time measurements between serial and parallel times, measured via the CPU time. From here, we can deduce K by looking at the time spent on serial operations as a fraction of the overall time.
+  Gustafson estimated the speed-up S gained by using N processors (instead of just one) for a task with a serial fraction(which does not benefit from parallelism) K as $S=N+(1-N)K$. The table below shows the time measurements between serial and parallel times, measured via the CPU time. From here, we can deduce K by looking at the time spent on serial operations as a fraction of the overall time.
 
-| Number of Bodies | Threads | Serial Time | Parallel Time (Per Thread) | Total Time | K | 
-|------------------+---------+-------------+---------------+------------+---|
-| 20000 | 1 | 0.026708 | 35.1801 | 35.206808 | 0.0007044473923 | 
-| 20000 | 2 | 0.028066 | 17.64145 | 17.669516 | 0.0007420183465 | 
-| 20000 | 3 | 0.026398 | 12.09363333 | 12.12003133 | 0.0006748307414 | 
-| 20000 | 4 | 0.026561 | 9.3316 | 9.358161 | 0.0006612924385 | 
-| 20000 | 5 | 0.023714 | 9.29126 | 9.314974 | 0.0004690381061 | 
-| 20000 | 6 | 0.020047 | 9.262066667 | 9.282113667 | 0.0003273934802 | 
-| 20000 | 7 | 0.026727 | 9.008214286 | 9.034941286 | 0.0003931372192 | 
-| 20000 | 8 | 0.028578 | 8.795575 | 8.824153 | 0.0003793082384 | 
-| 50000 | 1 | 0.055767 | 219.885 | 219.940767 | 0.0002255879951 | 
-| 50000 | 2 | 0.054913 | 110.6975 | 110.752413 | 0.0002318856395 | 
-| 50000 | 3 | 0.057161 | 75.45833333 | 75.51549433 | 0.0002303044535 | 
-| 50000 | 4 | 0.055998 | 58.141 | 58.196998 | 0.0002340699913 | 
-| 50000 | 5 | 0.04972 | 57.4432 | 57.49292 | 0.0002192463943 | 
-| 50000 | 6 | 0.054618 | 56.70416667 | 56.75878467 | 0.0001566519646 | 
-| 50000 | 7 | 0.049742 | 55.82085714 | 55.87059914 | 0.000146939975 | 
-| 50000 | 8 | 0.056105 | 54.79475 | 54.850855 | 0.0001151510654 |
+  | Number of Bodies | Threads | Serial Time | Parallel Time (Per Thread) | Total Time | K | 
+  |------------------+---------+-------------+---------------+------------+---|
+  | 20000 | 1 | 0.026708 | 35.1801 | 35.206808 | 0.0007044473923 | 
+  | 20000 | 2 | 0.028066 | 17.64145 | 17.669516 | 0.0007420183465 | 
+  | 20000 | 3 | 0.026398 | 12.09363333 | 12.12003133 | 0.0006748307414 | 
+  | 20000 | 4 | 0.026561 | 9.3316 | 9.358161 | 0.0006612924385 | 
+  | 20000 | 5 | 0.023714 | 9.29126 | 9.314974 | 0.0004690381061 | 
+  | 20000 | 6 | 0.020047 | 9.262066667 | 9.282113667 | 0.0003273934802 | 
+  | 20000 | 7 | 0.026727 | 9.008214286 | 9.034941286 | 0.0003931372192 | 
+  | 20000 | 8 | 0.028578 | 8.795575 | 8.824153 | 0.0003793082384 | 
+  | 50000 | 1 | 0.055767 | 219.885 | 219.940767 | 0.0002255879951 | 
+  | 50000 | 2 | 0.054913 | 110.6975 | 110.752413 | 0.0002318856395 | 
+  | 50000 | 3 | 0.057161 | 75.45833333 | 75.51549433 | 0.0002303044535 | 
+  | 50000 | 4 | 0.055998 | 58.141 | 58.196998 | 0.0002340699913 | 
+  | 50000 | 5 | 0.04972 | 57.4432 | 57.49292 | 0.0002192463943 | 
+  | 50000 | 6 | 0.054618 | 56.70416667 | 56.75878467 | 0.0001566519646 | 
+  | 50000 | 7 | 0.049742 | 55.82085714 | 55.87059914 | 0.000146939975 | 
+  | 50000 | 8 | 0.056105 | 54.79475 | 54.850855 | 0.0001151510654 |
 
-As the processor in question includes hyper-threading, it may obfuscate the results in some manner. The program depends on its floating point operations. The use of hyper-threading provides the illusion of 8 threads, whereas in reality, floating point registers are shared between a virtual thread and a physical core, reducing the effectiveness of the extra threads. This is shown in the graph below, where diminishing returns can be seen from 4 threads onwards. Therefore, we treat the rest of Gustafson's formula using 4 threads; representing the physical cores. 
 
-For 50,000 bodies $K=0.0002255879951$ is chosen from the 1 thread operation. This Results in S being $4 + (1-4) \times 0.000225.. = 4.000675$. This law is respected when we compare the speedup from 4 threads against 1 thread, where the speedup is 3.77x. ('8 Threads' provides a speedup of 4.0097x which is within margin of error).
+  ![Red represents 50,000 body operations, and blue represents 20,000 bodies.](20k-50k.png)
 
-![Red represents 50,000 body operations, and blue represents 20,000 bodies.](20k-50k.png)
+  As the processor in question includes hyper-threading, it may obfuscate the results in some manner. The program depends on its floating point operations. The use of hyper-threading provides the illusion of 8 threads, whereas in reality, floating point registers are shared between a virtual thread and a physical core, reducing the effectiveness of the extra threads. This is shown in the graph below, where diminishing returns can be seen from 4 threads onwards. We can see this in Figure 3, where the results reach diminishing returns after 4 threads. Therefore, we treat the rest of Gustafson's formula using 4 threads; representing the physical cores.
 
-   It depends on whether you fix the problem size.
-   It hence depends on your purpose.
-   It is crucial to clarify assumptions a priori.
-   It is important to be aware of shortcomings.
+  For 50,000 bodies $K=0.0002255879951$ is chosen from the 1 thread operation. This Results in S being $4 + (1-4) \times 0.000225.. = 4.000675$. This law is respected when we compare the speed-up from 4 threads against 1 thread, where the speed-up is 3.77x. ('8 Threads' provides a speed-up of 4.0097x which is within margin of error). This goes in hand with our scaling plot where we can see a 3.7x increase between parallel and serial simulations in the scaling experiments.
+
+<!-- It depends on whether you fix the problem size.
+It hence depends on your purpose.
+It is crucial to clarify assumptions a priori.
+It is important to be aware of shortcomings. -->
 
 3. __How does the parallel efficiency change over time if you study a long-running simulation?__
 
-  - should be better since the serial part would be less dominant
-  - initialise the threads once, share memory pool
-  - talk about part 1 and part 2
-  - more efficent over time
-  - more collisions, faster operations
+As mentioned in Question 1, initiating a set of threads for parallel operations is very expensive. However, it is also the case that initiation is done once at the beginning of the program. Over time, the serial operation becomes a smaller fraction of the overall running time. This makes parallel operations the dominant factor in the runtime. This consequently makes the parallel efficiency increase as the threads are more utilised for a longer duration of the simulation.
 
-  - Parallelism on a single machine now depends on other factors
-    - makes more heat
-    - poor code
-    - transistor noise
-    - contingent on other factors on the machine
-
-  <!-- A. analyse efficiency at different points in a single long run or
-
-B. compare a long run to shorter ones? -->
+This is however, assuming that the simulation is running for an extended period of time. If, like question 1 the simulation is run short where the serial operations dominate the running time, the parallel efficiency is considered very low.
 
 # Distributed Memory Simulation
 <!-- 20 marks -->
@@ -212,18 +201,15 @@ gedankenexperiment. -->
 
 ## Assumptions and Setup
 
-- MPI is SPMD (Single program; multiple data)
-  - we check the ID to determine whether it is a master or a slave, we call master rank 0.
-  - the master has its own set of functions, and so does the master
+For the sake of simplicity: 
+- we assume near zero latency for transmission.
+- The master-slave model is adopted; the master rank does not perform any major computation; this is distributed to the slaves
 
-- Assume perfect zero latency theoretical model between ranks
-
-- For sake of simplicity the master-slave model is adopted; the master rank does not perform any major computation; this is distributed to the slaves
-
-- Every CPU in the MPI network will have a copy of the same code, but is allocated different sets of data in regards to the loop position they are to compute
+MPI is SPMD (Single program; multiple data), every CPU in the MPI network will have a copy of the same code, but is allocated different sets of instructions and data based on their rank. We check the ID of their rank to determine whether it is a master or a slave, we call master rank 0. The master has its own set of functions, and so does the slaves.
 
 ## Operation
 
+- master rank does not compute most of the operations, this is given to the slaves.
 - master rank initiates a large array of bodies and `MPI_Bcast` to slaves
 - whilst this utilises a lot of data transmission, it is necessary as when calculating the force for a given body, it compares its position against every other body in the space.
 
@@ -246,13 +232,13 @@ gedankenexperiment. -->
 
 - for adaptive timestepping
   - we can distribute the potential solution between nodes
+  - Each rank can compute a potential solution
+  - and are collated back to the master rank to determine the best timestep to utilise.
 
 - for updating the bodies
-  - given enough bodies this can be distributed across the network too using a `MPI_Scatter` and `MPI_Reduce`
+  - given enough bodies this can be distributed across the network too using a fairly simple  `MPI_Scatter` and `MPI_Reduce`
 
-- Process is repeated accordingly
-
-## Issues
+- Process is repeated for each step until the simulation is finished.
 
 <!-- Mark Scheme
 
