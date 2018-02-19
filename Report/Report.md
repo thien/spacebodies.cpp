@@ -2,7 +2,7 @@
 title: "Space Bodies Assignment"
 author: cmkv68
 date: February 19, 2018
-geometry: "left=2cm,right=2cm,top=2cm,bottom=2cm"
+geometry: "left=3cm,right=3cm,top=3cm,bottom=3cm"
 output: pdf_document
 ---
 
@@ -109,7 +109,9 @@ particles merge.
 
 Due to the nature of the bodies interacting with a force, collisions are unpredictable and are likely to fly away as they progress over time. For the sake of the simulation, each randomly generated body (using the seed mentioned prior) has a value ranging from -0.000001 to 0.000001 for all of its displacement attributes $(s_x, s_y, s_z)$ and its velocities ($v_x, v_y, v_z$). The mass for each body would be infinitesimally small ($10^{-11}$) to reduce its effect upon force generation. We use a 20,000 body simulation in order to increase the chances of collisions. Adaptive time stepping is enabled. The base timestep is $10^-7$.
 
-A good portion of bodies are merged upon spawning; the first time step shows a considerable number of collisions due to the high probabilistic outcomes as the density of bodies in a small area affords. Simulating the outcome using a larger range makes it unlikely for a collision to occur. Issues were faced in terms of running the simulation on Paraview due to the massive range of values that can be produced as a consequence of values in the range (from $-10^-8$ to $10^21$). It is also noted that in the event of collisions during collisions, it reduces the number of operations as bodies are fused, improving the running time.
+A good portion of bodies are merged upon spawning; the first time step shows a considerable number of collisions due to the high probabilistic outcomes as the density of bodies in a small area affords. Simulating the outcome using a larger range makes it unlikely for a collision to occur.
+
+Issues were faced in terms of running the simulation on Paraview due to the massive range of values that can be produced as a consequence of values in the range (from $-10^-8$ to $10^21$). It is also noted that in the event of collisions during collisions, it reduces the number of operations as bodies are fused, improving the running time.
 
 # Scaling Experiments
 
@@ -156,7 +158,10 @@ For larger sets of bodies, parallel programming shows a considerable improvement
 
   Gustafson estimated the speed-up S gained by using N processors (instead of just one) for a task with a serial fraction(which does not benefit from parallelism) K as $S=N+(1-N)K$. The table below shows the time measurements between serial and parallel times, measured via the CPU time. From here, we can deduce K by looking at the time spent on serial operations as a fraction of the overall time.
 
-  | Number of Bodies | Threads | Serial Time | Parallel Time (Per Thread) | Total Time | K | 
+  As the processor in question includes hyper-threading, it may obfuscate the results in some manner. The program depends on its floating point operations. The use of hyper-threading provides the illusion of 8 threads, whereas in reality, floating point registers are shared between a virtual thread and a physical core, reducing the effectiveness of the extra threads. This is shown in the graph below, where diminishing returns can be seen from 4 threads onwards. We can see this in Figure 3, where the results reach diminishing returns after 4 threads. Therefore, we treat the rest of Gustafson's formula using 4 threads; representing the physical cores.
+
+
+  | Number of Bodies | Threads | Serial Time | Parallel Time | Total Time | K | 
   |------------------+---------+-------------+---------------+------------+---|
   | 20000 | 1 | 0.026708 | 35.1801 | 35.206808 | 0.0007044473923 | 
   | 20000 | 2 | 0.028066 | 17.64145 | 17.669516 | 0.0007420183465 | 
@@ -177,8 +182,6 @@ For larger sets of bodies, parallel programming shows a considerable improvement
 
 
   ![Red represents 50,000 body operations, and blue represents 20,000 bodies.](20k-50k.png)
-
-  As the processor in question includes hyper-threading, it may obfuscate the results in some manner. The program depends on its floating point operations. The use of hyper-threading provides the illusion of 8 threads, whereas in reality, floating point registers are shared between a virtual thread and a physical core, reducing the effectiveness of the extra threads. This is shown in the graph below, where diminishing returns can be seen from 4 threads onwards. We can see this in Figure 3, where the results reach diminishing returns after 4 threads. Therefore, we treat the rest of Gustafson's formula using 4 threads; representing the physical cores.
 
   For 50,000 bodies $K=0.0002255879951$ is chosen from the 1 thread operation. This Results in S being $4 + (1-4) \times 0.000225.. = 4.000675$. This law is respected when we compare the speed-up from 4 threads against 1 thread, where the speed-up is 3.77x. ('8 Threads' provides a speed-up of 4.0097x which is within margin of error). This goes in hand with our scaling plot where we can see a 3.7x increase between parallel and serial simulations in the scaling experiments.
 
