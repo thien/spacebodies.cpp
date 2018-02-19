@@ -14,7 +14,7 @@ i.e. it may not exceed six pages in total.
 # Numerical Experiments
 
 ## Consistency & Convergence
-<!-- 40 marks -->
+<!-- Part 2 is 40 marks -->
 <!-- 
 Study two particles. Choose their velocity and initial position such
 that they directly collide with each other. Create a table where you document the
@@ -32,9 +32,29 @@ The table below describes the information related to the two bodies used for the
 | 1 | +0.1 | +0.1 | +0.1 | -2.0 | -2.0 | -2.0 | $1e^{-11}$ |
 | 2 | -1.0 | -1.0 | -1.0 | +2.0 | +2.0 | +2.0 | $1e^{-11}$ |
 
-The bodies collide at $(x,y,z) = (0.155,0.155,0.155)$ at time $t=0.275$. The error is calculated through calculating the difference between the position of one body and the other body upon collision. The following table shows the timestep used to calculate the collision, and the error value left over. We calculate the error of only one dimension; $x$, as the other dimensions ($y,z$) would follow the same values. The adaptive timestep has a baseline value of $10^{-4}$ and reduces contingent to how close two bodies are close to colliding towards each other. Adaptive holds a hard limit of $10^{-10}$.
+Since the mass is miniscule, its effect on the force is negligible, allowing us to predict where the bodies will collide easily; it occurs at $(x,y,z) = (-0.45 -0.45 -0.45)$ at time $t=0.2$. The error is calculated through calculating the difference between the position of one body and the intended position upon collision. The following table shows the timestep used, and the error value left over. We calculate the error of only one dimension; $x$, as the other dimensions ($y,z$) would follow the same values. The adaptive timestep has a baseline value of $10^{-4}$ and reduces contingent to how close two bodies are close to colliding towards each other. Adaptive holds a hard limit of $10^{-10}$.
 
-| Timestep $h$ |  Error $\overline{u}_{h}$|  $x_{a}$ |  $x_{b}$ |  Ratio |  Steps |  Range |
+<!-- | Timestep $h$ |  Error $\overline{u}_{h}$ |  $x_{a}$ |  $x_{b}$ |  Ratio |  Steps | Error Range | C |
+|------+------+------+------+-----+------+------+------|
+|Adaptive|0.000001997990|-0.449998|-0.450002|0.500503|1716457|0.000003994500|N/A|
+|$10^{-6}/2^1$|0.000001999990|-0.449998|-0.450002|0.500003|275000|0.000003998500|N/A|
+|$10^{-6}/2^2$|0.000001000020|-0.449999|-0.450001|0.499992|550000|0.000001998520|1.999704035|
+|$10^{-6}/2^3$|0.000000499961|-0.45|-0.45|0.500039|1100000|0.000000998475|2.001092468|
+|$10^{-6}/2^4$|0.000000250068|-0.45|-0.45|0.499865|2200000|0.000000498564|1.999303944|
+|$10^{-6}/2^5$|0.000000125078|-0.45|-0.45|0.499688|4400000|0.000000248608|1.985730196|
+|$10^{-6}/2^6$|0.000000062134|-0.45|-0.45|0.502946|8800000|0.000000123183|2.070195922| -->
+
+| Timestep $h$ |  Error $\overline{u}_{h}$ |  $x_{a}$ |  $x_{b}$ |  Steps | Error Range | C |
+|------+------+------+------+-----+------+------|
+|Adaptive|0.000001997990|-0.449998|0.500503|1716457|0.000003994500|N/A|
+|$10^{-6}/2^1$|0.000001999990|-0.449998|0.500003|275000|0.000003998500|N/A|
+|$10^{-6}/2^2$|0.000001000020|-0.449999|0.499992|550000|0.000001998520|1.9997|
+|$10^{-6}/2^3$|0.000000499961|-0.45|-0.45|1100000|0.000000998475|2.0010|
+|$10^{-6}/2^4$|0.000000250068|-0.45|-0.45|2200000|0.000000498564|1.9993|
+|$10^{-6}/2^5$|0.000000125078|-0.45|-0.45|4400000|0.000000248608|1.9857|
+|$10^{-6}/2^6$|0.000000062134|-0.45|-0.45|8800000|0.000000123183|2.0701|
+
+<!-- | Timestep $h$ |  Error $\overline{u}_{h}$|  $x_{a}$ |  $x_{b}$ |  Ratio |  Steps | Error Range | 
 |------+------+------+------+-----+------+------+------|
 |Adaptive|0.000001997990|-0.449998|-0.450002|0.500503|1716457|0.000003994500|
 |$10^{-6}/2^1$|0.000001999990|-0.449998|-0.450002|0.500003|275000|0.000003998500|
@@ -42,23 +62,27 @@ The bodies collide at $(x,y,z) = (0.155,0.155,0.155)$ at time $t=0.275$. The err
 |$10^{-6}/2^3$|0.000000499961|-0.45|-0.45|0.500039|1100000|0.000000998475|
 |$10^{-6}/2^4$|0.000000250068|-0.45|-0.45|0.499865|2200000|0.000000498564|
 |$10^{-6}/2^5$|0.000000125078|-0.45|-0.45|0.499688|4400000|0.000000248608|
-|$10^{-6}/2^6$|0.000000062134|-0.45|-0.45|0.502946|8800000|0.000000123183|
+|$10^{-6}/2^6$|0.000000062134|-0.45|-0.45|0.502946|8800000|0.000000123183| -->
+
+<!-- 
 |$10^{-6}/2^7$|0.000000031729|-0.45|-0.45|0.492452|17600000|0.000000061368|
 |$10^{-6}/2^8$|0.000000014415|-0.45|-0.45|0.541966|35200000|0.000000028684|
 |$10^{-6}/2^9$|0.000000006426|-0.45|-0.45|0.607915|70400000|0.000000012311|
-|$10^{-6}/2^{10}$|0.000000002519|-0.45|-0.45|0.775391|140800000|0.000000004178|
+|$10^{-6}/2^{10}$|0.000000002519|-0.45|-0.45|0.775391|140800000|0.000000004178| -->
 
-A numerical approximation is used
+A numerical approximation is used by determining the order experimentally. We fix $p=1$ i.e. we have a linear convergence. We use the formula $|F^{i+1} - F^{\inf}| < C|F^{(i)} - F^{\inf}|^{p}$ to compute multiple constants $C_{i}$. The objective is to show that $C_{i}$ is roughly equal to $C$. 
 
-The order of accuracy $p$ can be obtained by taking the third last error $u_{h}$ to the expression $p = \log{\frac{u_{h} - u_{h/10}}{u_{h/10} - u_{h/100}}}$. Using the table, $p=0.7152957794...$, making our convergence rate $h^p$ = $(10^{-6}/2^8)^{0.7152957794...} = 9.67434210 \times 10^{-7}$. Implications show that the consistency is sub-linear as our $p<1$.
+The C values  ($C = \frac{u_{h} - u_{h/10}}{u_{h/10} - u_{h/100}}$) computed from the table are averaged to produce $C = 2.0112$. Knowing that a consistent $C$ is computed, this allows us to confirm that the code converges in a linear fashion.
 
 <!-- (0.000000014415 - 0.000000006426) / (0.000000006426 - 0.000000002519) -->
 
 We can see that the adaptive timestepping uses more iterations than $h=10^{-6}/2^1$ to reach the collision but produces a similar error, but this is due to the initial positions of the bodies. However, choosing a larger initial distance between the bodies would take a long period of time to produce results. 
 
+<!-- Talk about how the adaptive timestepping is calculated -->
+<!-- 
 ![A chart showing the the timestep used against the error produced. The chart shows a clear convergence towards zero.](chart.png)
 
----
+--- -->
 
 ## Complexity
 <!-- 
@@ -72,19 +96,6 @@ Under the assumption that the timestep and time limit is fixed, the most dominan
 
 Procedures have been taken to reduce the constant; Each body only calculates its force against bodies that precede them in the order of initiation i.e. Body $2$ calculates force from Body $1$ and Body $0$ whereas Body $3$ calculates from $0,1$ and $2$. 
 
-<!-- A pseudocode describes this method:
-
-    for (i=0; i<n):
-      for (j=0; j<i):
-        if (i != j):
-          distance = distance between body i and body j
-
-          m = i.mass*j.mass/distance/distance/distance;
-
-          for (k = 0; k < 3; k++):
-            i.force[k] += (i.x[k]-j.x[k]) * m;
-            j.force[k] += (i.x[k]-j.x[k]) * m; -->
-
 Whilst `updateBodies()` would continue to run in $O(n^2)$, the hidden constant would be drastically reduced to a factor of $\frac{1}{2}$ of the original number of calculations needed.
 
 ## Statistics
@@ -94,7 +105,11 @@ Create a plot that shows how the total number of particles decreases over simula
 particles merge.
 -->
 
-Each randomly generated body (using the seed mentioned prior,) has a value ranging from -1 to 1 for all of its attributes $(s_x, s_y, s_z, v_x, v_y, v_z)$. The mass for each body would be infinitesimally small to reduce its effect upon force generation. We use a 10000 body simulation in order to increase the chances of collisions.
+![A table showing bodies and collisions over time.](bod_time.png)
+
+Due to the nature of the bodies interacting with a force, collisions are unpredictible and likely to fly away as they progress over time. For the sake of the simulation, each randomly generated body (using the seed mentioned prior) has a value ranging from -0.000001 to 0.000001 for all of its displacement attributes $(s_x, s_y, s_z)$. and its velocities ($v_x, v_y, v_z$) are none. The mass for each body would be infinitesimally small ($10^-11$) to reduce its effect upon force generation. We use a 20,000 body simulation in order to increase the chances of collisions. Adaptive time stepping is enabled. The base timestep is $10^-7$.
+
+A good portion of bodies are merged upon spawning; the first time step shows a considerable number of collisions due to the high probablistic outcomes as the density of bodies in a small area affords. Simulating the outcome using a larger range makes it unlikely for a collision to occur. Issues were faced in terms of running the simulation on paraview due to the massive range of values that can be produced as a consequence of values in the range (from $-10^-8$ to $10^21$.).
 
 # Scaling Experiments
 
@@ -139,7 +154,7 @@ For larger sets of bodies, parallel programming shows a considerable improvement
 
 2. __Calibrate Gustafson’s law to your setup and discuss the outcome. Take your considerations on the algorithm complexity into account.__
 
-Gustafson estimated the speedup S gained by using N processors (instead of just one) for a task with a serial fraction(which does not benefit from parallelism) K as $S=N(1-N)K$. The table below shows the time measurements between serial and parallel times, measured via the CPU time. From here, we can deduce K by looking at the time spent on serial operations as a fraction of the overall time.
+Gustafson estimated the speedup S gained by using N processors (instead of just one) for a task with a serial fraction(which does not benefit from parallelism) K as $S=N+(1-N)K$. The table below shows the time measurements between serial and parallel times, measured via the CPU time. From here, we can deduce K by looking at the time spent on serial operations as a fraction of the overall time.
 
 | Number of Bodies | Threads | Serial Time | Parallel Time (Per Thread) | Total Time | K | 
 |------------------+---------+-------------+---------------+------------+---|
@@ -160,9 +175,9 @@ Gustafson estimated the speedup S gained by using N processors (instead of just 
 | 50000 | 7 | 0.049742 | 55.82085714 | 55.87059914 | 0.000146939975 | 
 | 50000 | 8 | 0.056105 | 54.79475 | 54.850855 | 0.0001151510654 |
 
-As the processor in question includes hyperthreading, it may obfuscate the results in some manner. The program depends on its floating point operations. The use of hyperthreading provides the illusion of 8 threads, whereas in reality, floating point registers are shared between a virtual thread and a physical core, reducing the effectiveness of the extra threads. This is shown in the graph below, where diminishing returns can be seen from 4 threads onwards. Therefore, we treat the rest of Gustafson's formula using 4 threads; representing the physical cores. 
+As the processor in question includes hyper-threading, it may obfuscate the results in some manner. The program depends on its floating point operations. The use of hyper-threading provides the illusion of 8 threads, whereas in reality, floating point registers are shared between a virtual thread and a physical core, reducing the effectiveness of the extra threads. This is shown in the graph below, where diminishing returns can be seen from 4 threads onwards. Therefore, we treat the rest of Gustafson's formula using 4 threads; representing the physical cores. 
 
-For 50,000 bodies $K=0.0002255879951$ is chosen from the 1 thread operation. This Results in S being $4 \times (1-3) \times 0.000225.. = 4.000675$. This law is respected when we compare the speedup from 4 threads against 1 thread, where the speedup is 3.77x. ('8 Threads' provides a speedup of 4.0097x which is within margin of error).
+For 50,000 bodies $K=0.0002255879951$ is chosen from the 1 thread operation. This Results in S being $4 + (1-4) \times 0.000225.. = 4.000675$. This law is respected when we compare the speedup from 4 threads against 1 thread, where the speedup is 3.77x. ('8 Threads' provides a speedup of 4.0097x which is within margin of error).
 
 ![Red represents 50,000 body operations, and blue represents 20,000 bodies.](20k-50k.png)
 
@@ -173,11 +188,21 @@ For 50,000 bodies $K=0.0002255879951$ is chosen from the 1 thread operation. Thi
 
 3. __How does the parallel efficiency change over time if you study a long-running simulation?__
 
+  - should be better since the serial part would be less dominant
+  - initialise the threads once, share memory pool
+  - talk about part 1 and part 2
+  - more efficent over time
+  - more collisions, faster operations
+
   - Parallelism on a single machine now depends on other factors
     - makes more heat
     - poor code
     - transistor noise
     - contingent on other factors on the machine
+
+  <!-- A. analyse efficiency at different points in a single long run or
+
+B. compare a long run to shorter ones? -->
 
 # Distributed Memory Simulation
 <!-- 20 marks -->
