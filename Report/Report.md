@@ -201,44 +201,30 @@ gedankenexperiment. -->
 
 ## Assumptions and Setup
 
-For the sake of simplicity: 
-- we assume near zero latency for transmission.
-- The master-slave model is adopted; the master rank does not perform any major computation; this is distributed to the slaves
+For the sake of simplicity:
 
-MPI is SPMD (Single program; multiple data), every CPU in the MPI network will have a copy of the same code, but is allocated different sets of instructions and data based on their rank. We check the ID of their rank to determine whether it is a master or a slave, we call master rank 0. The master has its own set of functions, and so does the slaves.
+- We assume near zero latency for transmission.
+- The master-slave model is adopted; the master rank does not perform any major computation; as this is distributed to the slaves
+
+MPI is SPMD (Single program; multiple data), so every CPU in the MPI network will have a copy of the same code, but handles different sets of instructions and data based on their rank. We check the ID of their rank to determine whether it is a master or a slave, we call master rank 0. The master has its own set of functions, and so does the slaves.
 
 ## Operation
 
-- master rank does not compute most of the operations, this is given to the slaves.
-- master rank initiates a large array of bodies and `MPI_Bcast` to slaves
-- whilst this utilises a lot of data transmission, it is necessary as when calculating the force for a given body, it compares its position against every other body in the space.
+The master rank does compute heavy operations; this is divided and split between the slaves. The master rank does, however, initiate the data structures that the slaves will utilise, including the bodies, timesteps and other helper variables that are also used in the OpenMP program. The contents of the bodies are broadcast to the slaves (via  `MPI_Bcast `) at every iteration which reduces the number of redundant transmissions during the slaves split-computation of the force loop in `updateBodies()`. 
 
-- for calculating the force
-  - Each rank will perform segments of the loop via `MPI_Scatter` (contingent on the number of bodies; it may be better given a large enough set (talking 100000+) to propagate them manually as the MPI buffers could heavily stress)
-    - they're passed the relevant information;
-      - master rank uses `MPI_send()` to a slave; slave receives using `MPI_recv()`
-      - verify data is received properly through checking the status of the received message (this applies to all messages transmitted; if it isn't a valid response then we should request the message again or have error handlers in place.)
-      - slaves have their own local variables that they can use to compute
-      - also `gets` relevant information from the global space such as the positions and velocities of bodies
-    - once the slave rank has finished computing the result, being the force increment for a body, are sent back to the master via `MPI_Reduce`
-  - will need to check that we have all the results!
+The primary use for parallelization during our OpenMP program was to handle the floating point calculation of forces for each body. The master rank splits segments of the loop (which could be via  `MPI_Scatter`, but this is contingent on the number of bodies. It may be better to propagate them through other means given a large enough set of bodies, as the MPI buffers could face heavy stress.) 
 
-  - they also calculate
-    - non blocking communication between the slave and master to send/receive information about short distances between two bodies as we calculate the potential collision afterwards; we use an `immediate_send`.
-  
-- for collisions
-  - contingent on the number of collisions occurred
-  - this can be distributed to nodes but depends on how fast data can be transmitted to
+The master rank uses an `MPI_send()` to send extra but relevant information to a slave, and the slave receives data using `MPI_recv()`. Received data needs to be verified by checking the status of the received message. (This applies to all messages transmitted; if it isn't a valid response then we should request the message again or have error handlers in place.)
 
-- for adaptive timestepping
-  - we can distribute the potential solution between nodes
-  - Each rank can compute a potential solution
-  - and are collated back to the master rank to determine the best timestep to utilise.
+Slaves also have their own local variables that are not necessarily needed to be stored in the shared pool of memory; for instance, helper variables for inner loops and variables that help make code more human-interpretable. Otherwise,  `gets` will also suffice for a slave to retrieve information from the global space, for instance, the positions and velocities of bodies.
 
-- for updating the bodies
-  - given enough bodies this can be distributed across the network too using a fairly simple  `MPI_Scatter` and `MPI_Reduce`
+The distance calculation would be its own function for the MPI program, and is called by slaves to increment the overall force for a given body. It is also used to determine whether two bodies have collided, where a non-blocking `immediate_send` could be initiated from a slave to the master rank, indicating a collision between two bodies.
 
-- Process is repeated for each step until the simulation is finished.
+Once a slave rank has finished computation of a force increment, they are sent back to the master rank via  `MPI_reduce`. The master rank will need to verify that all the results have been received prior to continuing with the rest of the operations needed to update the bodies.
+
+The adaptive timestep can be computed by having slave nodes calculate potential collisions using various time step sizes. The results are collated back to the master rank to determine the best timestep to utilise.
+
+In terms of updating the bodies, this can again, be distributed across the network  using a fairly simple  `MPI_Scatter` and `MPI_Reduce`. Like the OpenMP program, the iteration is repeated for each step until the simulation is finished.
 
 <!-- Mark Scheme
 
