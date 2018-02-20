@@ -113,9 +113,9 @@ particles merge.
 
 Due to the nature of the bodies interacting with a force, collisions are unpredictable and are likely to fly away as they progress over time. For the sake of this particular simulation, each randomly generated body (using the seed mentioned prior) has a value ranging from -0.000001 to 0.000001 for all of its displacement attributes $(s_x, s_y, s_z)$ and its velocities ($v_x, v_y, v_z$). To improve chances of a collision, the mass for each body would be negligible ($10^{-11}$), and a 20,000 random bodies are initialised. Adaptive time stepping is enabled. The base timestep is $10^{-7}$.
 
-A good portion of bodies are merged upon spawning; the first time step shows a considerable number of collisions due to the high probabilistic outcomes as the density of bodies in a small area affords. Simulating the outcome using a larger range makes it unlikely for a collision to occur.
+A good portion of bodies are merged upon spawning. This is due to the high chances of bodies having the same positions due to the small range of values that can be generated for the bodies characteristics. It is also noted that simulating the outcome in a larger period of time makes it increasingly unlikely for a collision to occur.
 
-Issues were faced in terms of running the simulation on Paraview due to the wide  spectrum of values produced; i.e values are range from $-10^{-8}$ to $10^{21}$. It is also noted that in the event of collisions during collisions, it reduces the number of operations as bodies are fused, improving the running time.
+Issues were faced in terms of running the simulation on Paraview due to the number of bodies and the wide spectrum of values produced; i.e values are range from $-10^{-8}$ to $10^{21}$. This is related to how the calculation of the next bodies; where the force calculated can influence the bodies trajectory in a significant manner. It is also noted that collisions improve the running time as there are less bodies to consider during calculation.
 
 #4.  Scaling Experiments
 
@@ -127,8 +127,7 @@ Clarify explicitly in your report the machine specifica. -->
 
 ![A scaling plot of serial vs parallel runtime for various body sizes.](parallel_vs_serial_chart.png)
 
-To ensure that parallel modifications did not break the code, an MD5 sum of the Paraview files computed from both parallel and serial simulations are used to verify any difference in results.
-The personal computer used consists of a `Intel i7 3770k` processor at a 3.7Ghz clock speed, powering 4 cores (and 8 threads). It utilises 32GB of memory and the storage consists of a SSD hooked up via SATA3. It is using a fresh installation of Ubuntu 16.04 LTS and has no other additional programs running. Adaptive timestepping is not utilised as the serial simulation would take too much time, especially in the case for 10,000 bodies. The results are shown in the table below. Parallel programs will utilise the full 4 cores/8 threads. For this simulation, bodies are generated in the range of -1 to 1 for its displacement attributes, its velocities, and mass. Bodies are generated serially to ensure that both serial and parallel runs utilise the same bodies.
+To verify that parallel modifications did not break the code, an MD5 sum of the Paraview files computed from both parallel and serial simulations are used to verify differences in results. The computer used consists of a `Intel i7 3770k` processor at a 3.7Ghz clock speed, powering 4 cores (and 8 threads). It utilises 32GB of DDR3 RAM and the storage consists of a SSD connected via a SATA3 interface. It runs a fresh installation of Ubuntu 16.04 LTS and has no other additional programs running. Adaptive timestepping is not utilised as the serial simulation would take too much time, especially in the case for 10,000 bodies. The results are shown in the table below. Parallel programs utilise the full 4 cores/8 threads. For this simulation, bodies are generated in the range of -1 to 1 for its displacement attributes, its velocities, and mass. Bodies are generated serially to ensure that both serial and parallel runs utilise the same bodies.
 
 | Type | CPU Time | Real Time (ms) | Real Time | 
 |----+-------+--------+----------|
@@ -145,22 +144,18 @@ The personal computer used consists of a `Intel i7 3770k` processor at a 3.7Ghz 
 |------------+------+------+-----+--------|
 | Performance Increase |	0.08824901121	| 0.9391967122	| 3.202842744	 | 3.705355496 |
 
-It should be mentioned that the performance increase is measured by looking at the time taken to run the whole simulation. I talk about this in detail in Question 2.
-
-## Scaling Plot
-
-For larger sets of bodies, parallel programming shows a considerable improvement against serial. The issue where the smaller set of bodies is answered in detail in Question 1. All simulations here have been recorded and displayed on Paraview. The video is [here](https://www.youtube.com/watch?v=JAh_YskmOXc) [(https://www.youtube.com/watch?v=JAh_YskmOXc)](https://www.youtube.com/watch?v=JAh_YskmOXc) .
+For larger sets of bodies, parallel programming shows a considerable improvement against serial. The issue where the smaller set of bodies is answered in detail in Question 1. It should be mentioned that the performance increase is measured by looking at the time taken to run the whole simulation. I talk about this in detail in Question 2. All simulations here have been recorded and displayed on Paraview. The video is [here](https://www.youtube.com/watch?v=JAh_YskmOXc) [(https://www.youtube.com/watch?v=JAh_YskmOXc)](https://www.youtube.com/watch?v=JAh_YskmOXc). 
 
 ## Questions
 <!-- 30 marks -->
 
 1. __How does the scalability for very brief simulation runs depend on the total particle count?__
 
-  There is a lot of overhead involved in initiating a set of threads for it to be utilised for parallel operations, to the extent that _may take more time than the actual simulation itself._ This may include each thread initiating their own set of variables, and initiation of a shared set of memory. This was the case for 10 and 100 bodies simulation, where it is evident that parallelisation affected the timing of the results in a negative manner. For a small operation, it is often better to compute the operation serially.
+There is a large overhead involved in terms of initiating a set of threads to be utilised for parallel operations, to the extent that _may take more time than the actual simulation itself._ This includes each thread initiating their own set of variables, and initiating shared set of memory. This was the case for the  10 and 100 bodies simulation, where it is evident that parallelisation affected the timing of the results in a negative manner. For a small operation, it is often better to compute the operation serially.
 
 2. __Calibrate Gustafson’s law to your setup and discuss the outcome. Take your considerations on the algorithm complexity into account.__
 
-Gustafson estimated the speed-up S gained by using N processors (instead of just one) for a task with a serial fraction(which does not benefit from parallelism) K as $S=N+(1-N)K$. The table below shows the time measurements between serial and parallel times, measured via the CPU time. From here, we can deduce K by looking at the time spent on serial operations as a fraction of the overall time.
+Gustafson estimated the speed-up $S$ gained by using $N$ processors (instead of just one) for a task with a serial fraction(which does not benefit from parallelism,) $K$, as $S=N+(1-N)K$. The table below shows the time measurements between serial and parallel times, measured via the CPU time. From here, we can deduce K by looking at the time spent on serial operations as a fraction of the overall time.
 
 | Number of Bodies | Threads | Serial Time | Parallel Time | Total Time | K | 
 |------------------+---------+-------------+---------------+------------+---|
@@ -181,11 +176,11 @@ Gustafson estimated the speed-up S gained by using N processors (instead of just
 | 50000 | 7 | 0.049742 | 55.82085714 | 55.87059914 | 0.000146939975 | 
 | 50000 | 8 | 0.056105 | 54.79475 | 54.850855 | 0.0001151510654 |
 
-As the processor in question includes hyper-threading, it may obfuscate the results in some manner. The program depends on its floating point operations. The use of hyper-threading provides the illusion of 8 threads, whereas in reality, floating point registers are shared between a virtual thread and a physical core, reducing the effectiveness of the extra threads. This is shown in the graph below, where diminishing returns can be seen from 4 threads onwards. We can see this in Figure 3, where the results reach diminishing returns after 4 threads. Therefore, we treat the rest of Gustafson's formula using 4 threads; representing the physical cores.
+As the processor in question includes hyper-threading, it may obfuscate the results in some manner. The program depends on its floating point operations. The use of hyper-threading provides the illusion of 8 threads, whereas in reality, floating point registers are shared between a virtual thread and a physical core, reducing the effectiveness of the extra threads. This is shown in the table above, where diminishing returns can be seen from 4 threads onwards. This is also visualised in Figure 3. Therefore, we treat the rest of Gustafson's formula using 4 threads; each representing a physical core.
 
 ![Red represents 50,000 body operations, and blue represents 20,000 bodies.](20k-50k.png)
 
-For 50,000 bodies $K=0.0002255879951$ is chosen from the 1 thread operation. This Results in S being $4 + (1-4) \times 0.000225.. = 4.000675$. This law is respected when we compare the speed-up from 4 threads against 1 thread, where the speed-up is 3.77x. ('8 Threads' provides a speed-up of 4.0097x which is within margin of error). This goes in hand with our scaling plot where we can see a 3.7x increase between parallel and serial simulations in the scaling experiments.
+For 50,000 bodies, $K=0.0002255879951$ is chosen from the 1 thread operation. This Results in S being $4 + (1-4) \times 0.000225.. = 4.000675$. This law is respected when we compare the speed-up from 4 threads against 1 thread, where the speed-up is 3.77x. ('8 Threads' provides a speed-up of 4.0097x which is within margin of error). This goes in hand with our scaling plot where we can see a 3.7x increase between parallel and serial simulations in the scaling experiments.
 
 <!-- It depends on whether you fix the problem size.
 It hence depends on your purpose.
@@ -194,7 +189,7 @@ It is important to be aware of shortcomings. -->
 
 3. __How does the parallel efficiency change over time if you study a long-running simulation?__
 
-As mentioned in Question 1, initiating a set of threads for parallel operations is very expensive. However, it is also the case that initiation is done once at the beginning of the program. Over time, the serial operation becomes a smaller fraction of the overall running time. This makes parallel operations the dominant factor in the runtime. This consequently makes the parallel efficiency increase as the threads are more utilised for a longer duration of the simulation.
+As mentioned in Question 1, initiating a set of threads for parallel operations is computationally expensive. However, it is also the case that initiation is done once at the beginning of the program. Over time, the serial operation becomes a smaller fraction of the overall running time. This makes parallel operations the dominant factor in the runtime. This consequently makes the parallel efficiency increase as the threads are more utilised for a longer duration of the simulation.
 
 This is however, assuming that the simulation is running for an extended period of time. If, like question 1 the simulation is run short where the serial operations dominate the running time, the parallel efficiency is considered very low.
 
@@ -211,25 +206,25 @@ For the sake of simplicity:
 - We assume near zero latency for transmission.
 - The master-slave model is adopted; the master rank does not perform any major computation; as this is distributed to the slaves
 
-MPI is SPMD (Single program; multiple data), so every CPU in the MPI network will have a copy of the same code, but handles different sets of instructions and data based on their rank. We check the ID of their rank to determine whether it is a master or a slave, we call master rank 0. The master has its own set of functions, and so does the slaves.
+MPI is SPMD (Single program; multiple data), so every CPU in the MPI network has a copy of the same code, but handles different sets of instructions and data based on their rank. We check the ID of their rank to determine whether it is a master or a slave, we call master rank 0. The master has its own set of functions, and so does the slaves.
 
 ## Operation
 
-The master rank does compute heavy operations; this is divided and split between the slaves. The master rank does, however, initiate the data structures that the slaves will utilise, including the bodies, timesteps and other helper variables that are also used in the OpenMP program. The contents of the bodies are broadcast to the slaves (via  `MPI_Bcast `) at every iteration which reduces the number of redundant transmissions during the slaves split-computation of the force loop in `updateBodies()`. 
+The master rank does not compute heavy operations; this is divided and split between the slaves. The master rank does, however, initiate the data structures that the slaves would utilise, including the bodies, timesteps and other helper variables that are also used in the same style as is the OpenMP program. The contents of the bodies are broadcast to the slaves (via  `MPI_Bcast `) at every iteration, reducing the number of redundant transmissions during the slaves split-computation of the force loop in `updateBodies()`. 
 
-The primary use for parallelization during our OpenMP program was to handle the floating point calculation of forces for each body. The master rank splits segments of the loop (which could be via  `MPI_Scatter`, but this is contingent on the number of bodies. It may be better to propagate them through other means given a large enough set of bodies, as the MPI buffers could face heavy stress.) 
+The primary use for parallelization during our OpenMP program was to handle the floating point calculation of forces acting on each body. The master rank splits segments of the loop and distributes them to the slaves  (which could be via  `MPI_Scatter`, but this is contingent on the number of bodies. It may be better to propagate them through other means given a large enough set of bodies, as the MPI buffers could face heavy stress.) 
 
-The master rank uses an `MPI_send()` to send extra but relevant information to a slave, and the slave receives data using `MPI_recv()`. Received data needs to be verified by checking the status of the received message. (This applies to all messages transmitted; if it isn't a valid response then we should request the message again or have error handlers in place.)
+The master rank also uses an `MPI_send()` to send extra but relevant information to a slave, and the slave receives data using `MPI_recv()`. Received data needs to be verified by checking the status of the received message. (This applies to all messages transmitted; if it isn't a valid response then we should request the message again or have error handlers in place.)
 
-Slaves also have their own local variables that are not necessarily needed to be stored in the shared pool of memory; for instance, helper variables for inner loops and variables that help make code more human-interpretable. Otherwise,  `gets` will also suffice for a slave to retrieve information from the global space, for instance, the positions and velocities of bodies.
+Slaves also have their own local variables that are not necessarily needed to be stored in the shared pool of memory; for instance, variables for inner loops and helper variables that help make code more human-interpretable. Otherwise, `gets` also suffice for a slave to retrieve some data from the global space that they have not already received from a broadcast, for instance, the positions and velocities of bodies.
 
 The distance calculation would be its own function for the MPI program, and is called by slaves to increment the overall force for a given body. It is also used to determine whether two bodies have collided, where a non-blocking `immediate_send` could be initiated from a slave to the master rank, indicating a collision between two bodies.
 
-Once a slave rank has finished computation of a force increment, they are sent back to the master rank via  `MPI_reduce`. The master rank will need to verify that all the results have been received prior to continuing with the rest of the operations needed to update the bodies.
+Once a slave rank has finished computation of a force increment, they are sent back to the master rank via  `MPI_reduce`. The master rank would verify that all the results have been received prior to continuing with the rest of the operations needed to update the bodies.
 
-The adaptive timestep can be computed by having slave nodes calculate potential collisions using various time step sizes. The results are collated back to the master rank to determine the best timestep to utilise.
+The adaptive timestep can be computed by having slave nodes calculate potential collisions using various time step sizes. The results would collate back to the master rank to determine the best timestep to utilise.
 
-In terms of updating the bodies, this can again, be distributed across the network  using a fairly simple  `MPI_Scatter` and `MPI_Reduce`. Like the OpenMP program, the iteration is repeated for each step until the simulation is finished.
+In terms of updating the bodies, this can again, be distributed across the network in the same vein as how bodies are broadcast to the slaves at the beginning. Like the OpenMP program, the iteration is repeated for each step until the simulation is finished.
 
 <!-- Mark Scheme
 
