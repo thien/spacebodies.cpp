@@ -26,12 +26,13 @@
 #include <time.h>
 #include <iomanip>
 
-// CONFIGS
+// CONFIGURATION OPTIONS
+
 bool adaptiveTimeStepCheck = true; // If true, then use adaptive timestep
-bool useParaview = true; // if true, write paraview related files.
+bool useParaview = true; // if true, write paraview files.
 bool runParallel = true; // if set to parallel; then we run it in series.
 
-double defaultTimeStepSize = 0.00001;
+double defaultTimeStepSize = 0.0001;
 double smallSizeLimit = 1e-8; // If variables are smaller than this then it might as well be zero.
 
 int numberOfIterations = 20; // When using the collision iteration (for different timesteps)
@@ -51,10 +52,12 @@ double referenceDistance = -1.95; // If measuring error, use this value as the r
 // Tools to manage random spacebodies
 // random bodies are called with the -r flag..
 // i.e ./spacebodies -r
+
 int NumberOfRandomBodies = 10000;
-double randomSimTFinal = 200.0;
-double fMin = -0.000001; // random double min
-double fMax = 0.000001; // random double max
+double randomSimTFinal = 0.1;
+double fMin = -0.0001; // random double min
+double fMax = 0.0001; // random double max
+bool bodiesHaveMass = false; // if false, then the bodies have negligible mass
 
 // Seed value (used to generate random values for the bodies.)
 double seed = 12321321;
@@ -73,6 +76,7 @@ double seed = 12321321;
   std::ofstream videoFile;
   clock_t tStart = clock();
   int initialNumberOfBodies = 0;
+  time_t startTime = time(0);   // get time now
 
   // timer variables
   clock_t genRandomBodiesStart = clock();
@@ -80,6 +84,24 @@ double seed = 12321321;
   clock_t initEnd = clock();
   clock_t parallelEndTime = clock();
   clock_t taskEndTime = clock();  
+
+
+  std::string startTimeString(){
+    struct tm * now = localtime( & startTime );
+    
+    std::stringstream date_string;
+    date_string << now->tm_mday << '-'
+        << (now->tm_mon + 1) << '-'
+        << (now->tm_year + 1900) << "_"
+        << std::setw(2) << std::setfill('0')
+        << now->tm_hour << ":"
+        << std::setw(2) << std::setfill('0')
+        << now->tm_min << ":"
+        << std::setw(2) << std::setfill('0')
+        << now->tm_sec;
+    // std::cout << date_string.str();
+    return date_string.str();
+  }
 
 // CSV WRITER HANDLERS --------------------------
 
@@ -125,7 +147,7 @@ double seed = 12321321;
       }
 
       void print(int bodyID){
-        // literally prints body statistics.
+        // prints body statistics.
         printf("Body %4d: %+010.6f  %+010.6f  %+010.6f  %+010.6f  %+010.6f  %+010.6f  %+010.6f \n", bodyID, x[0], x[1], x[2], v[0], v[1], v[2], mass);
       }
   };
@@ -137,42 +159,51 @@ double seed = 12321321;
   */
 
   void printParaviewSnapshot(int counter, Body * bodies) {
+
     std::stringstream filename;
-    filename << "paraview/result-" << counter <<  ".vtp";
-    std::ofstream out( filename.str().c_str() );
+    filename << startTimeString() << "_result-" << counter <<  ".vtp";
+    std::stringstream filepath;
+    filepath << "paraview/" << filename.str();
+    std::ofstream out( filepath.str().c_str() );
     out << "<VTKFile type=\"PolyData\" >" << std::endl
         << "<PolyData>" << std::endl
-        << " <Piece NumberOfPoints=\"" << NumberOfBodies << "\">" << std::endl
-        << "  <Points>" << std::endl
-        << "   <DataArray type=\"Float32\" NumberOfComponents=\"3\" format=\"ascii\">";
+        << "\t<Piece NumberOfPoints=\"" << NumberOfBodies << "\">" << std::endl
+        << "\t\t<Points>" << std::endl
+        << "\t\t\t<DataArray type=\"Float32\" NumberOfComponents=\"3\" format=\"ascii\">"
+        << std::endl;
 
     for (int i=0; i<NumberOfBodies; i++) {
-      out << bodies[i].x[0]
+      out << "\t\t\t\t"
+          << bodies[i].x[0]
           << " "
           << bodies[i].x[1]
           << " "
           << bodies[i].x[2]
-          << " \n";
+          << std::endl;
     }
 
-    out << "   </DataArray>" << std::endl
-        << "  </Points>" << std::endl
-        << " </Piece>" << std::endl
+    out << "\t\t\t</DataArray>" << std::endl
+        << "\t\t</Points>" << std::endl
+        << "\t</Piece>" << std::endl
         << "</PolyData>" << std::endl
         << "</VTKFile>"  << std::endl;
 
-    videoFile << "<DataSet timestep=\"" << counter << "\" group=\"\" part=\"0\" file=\"" << filename.str() << "\"/>" << std::endl;
+    videoFile << "\t\t<DataSet timestep=\"" << counter << "\" group=\"\" part=\"0\" file=\"" << filename.str() << "\"/>" << std::endl;
   }
 
   void openParaviewVideoFile() {
-    videoFile.open( "result.pvd" );
+    std::stringstream pvdfile;
+    pvdfile << "paraview/" << startTimeString() << "_result.pvd";
+
+    videoFile.open( pvdfile.str() );
     videoFile << "<?xml version=\"1.0\"?>" << std::endl
               << "<VTKFile type=\"Collection\" version=\"0.1\" byte_order=\"LittleEndian\" compressor=\"vtkZLibDataCompressor\">" << std::endl
-              << "<Collection>";
+              << "\t<Collection>"
+              << std::endl;
   }
 
   void closeParaviewVideoFile() {
-    videoFile << "</Collection>"
+    videoFile << "\t</Collection>" << std::endl
               << "</VTKFile>" << std::endl;
   }
 
@@ -198,7 +229,9 @@ double seed = 12321321;
       str4 << NumberOfBodies;
       std::string bodyCountStr = str4.str();
 
-      // std::cout << "COLLISION @ t="<< t<<", Timestep: "<< currentTimestep << ": Error: " << pos << ", Location: " << a.x[0] << "; " << b.x[0] << ", Ratio: " << (currentTimestep/pos) <<", Steps: "<< timeStepsSinceLastPlot << ", Range: " << abs(b.x[0] - a.x[0]) << std::endl;
+      if (isCsvCollisionWrite){
+        std::cout << "COLLISION @ t="<< t<<", Timestep: "<< currentTimestep << ": Error: " << pos << ", Location: " << a.x[0] << "; " << b.x[0] << ", Ratio: " << (currentTimestep/pos) <<", Steps: "<< timeStepsSinceLastPlot << ", Range: " << abs(b.x[0] - a.x[0]) << std::endl;
+      }
 
       std::cout <<currentTimestep<<"," << pos << "," << a.x[0] << "," << b.x[0] << "," << (currentTimestep/pos) <<","<< timeStepsSinceLastPlot << "," << abs(b.x[0] - a.x[0]) << std::endl;
       
@@ -293,9 +326,7 @@ double seed = 12321321;
         std::cout << "invalid mass for body " << i << std::endl;
         exit(-2);
       }
-      // printf("Body %5.0d \t %4.2f %4.2f %4.2f %4.2f %4.2f %4.2f %4.2f \n", i, b[i].x[0], b[i].x[1], b[i].x[2], b[i].v[0], b[i].v[1], b[i].v[2], b[i].mass);
     }
-    // std::cout << "created setup with " << NumberOfBodies << " bodies" << std::endl;
   }
 
   // manipulate the timestep (only called when adaptive is enabled)
@@ -360,15 +391,6 @@ double seed = 12321321;
           }
         }
       }
-
-      // vanilla adaptive timestepping method; for use when everything else fails
-      // double EPS = 1e-8;
-      // for (int i = 0; i < 3; i++){
-
-      //   if (a.v[i] > 0 and (abs(timestep * a.force[0]/a.mass)/a.v[0] > EPS)){
-      //     timestep = timestep/2;
-      //   } 
-      // }
     }
     return timestep;
   }
@@ -393,8 +415,6 @@ double seed = 12321321;
     {
       
       // Calculate distances and forces for each body
-      // Note that we can run this in SIMD since none of the 
-      // iterations depends on the previous ones
       #pragma omp for schedule(guided)
       for (i=0; i<NumberOfBodies; i++) {
         // print bodies if enabled
@@ -469,7 +489,7 @@ double seed = 12321321;
    taskEndTime = clock();
   }
 
-  // Saves running time
+  // Saves running time to file
   void timeHandler(){
     clock_t tEnd = clock();
 
@@ -501,11 +521,10 @@ double seed = 12321321;
       std::cout << "s, Parallel Time: " << parallelTime;
       std::cout << "s, SerialPost Time: " << SerialPostTime;
       std::cout << "s\n";
+      std::cout << "Time taken: " << timeTaken << "s\n";
 
       // load file to write to
       std::ofstream outfile;
-
-      std::cout << "Time taken: " << timeTaken << "s\n";
 
        // save to file
       outfile.open("timerResults.txt", std::ios_base::app);
@@ -527,11 +546,13 @@ double seed = 12321321;
 
   // Starts the space body simulations.
   int performSpaceBodies(Body* bodies){
+    // add start time.
     initEnd = clock();
     initialNumberOfBodies = NumberOfBodies;
     timeStepsSinceLastPlot = 0;
     const int plotEveryKthStep = 100;
    
+    // repeat the loop for every step until we reach the end time.
     while (t<=tFinal) {
       updateBodies(bodies);
       timeStepsSinceLastPlot++;
@@ -539,10 +560,12 @@ double seed = 12321321;
       if (isCollided && isCsvCollisionWrite && terminateOnCollision){
         break;
       }
+      // update paraview files if enabled.
       if ((timeStepsSinceLastPlot%plotEveryKthStep==0) && useParaview) {
         printParaviewSnapshot(timeStepsSinceLastPlot/plotEveryKthStep, bodies);
       }
     }
+    // end time is handled here.
     timeHandler();
     return 0;
   }
@@ -565,11 +588,15 @@ double seed = 12321321;
         b[i].v[k] = random_value[k+3] * 100;
         b[i].force[k] = 0;
       }
-      b[i].mass = fabs(random_value[6]); // make sure the mass has a positive value!
+      if (bodiesHaveMass){
+        b[i].mass = fabs(random_value[6]); // make sure the mass has a positive value!
+      } else {
+        b[i].mass = 0.0000000001;
+      }
     }
   }
 
-  // check if the arguments are valid
+  // check validity of arguments
   int verifyArguments(int argc, char** argv){
 
     if (argc==1) {
@@ -634,6 +661,9 @@ double seed = 12321321;
       
       // initate run.
       for (int s = 0; s < loopCap; s++){
+        std::cout << "Resetting values for next iteration if needed.." << std::endl;
+        for (int i = 0; i < defaultBodyCount; i++){bodies[i].reset();}
+      
         // generate bodies.
         if (RandomBodies){
           std::cout << "Initiating Random Bodies.. ";
@@ -654,15 +684,11 @@ double seed = 12321321;
         }
 
         std::cout << "Starting The Space Bodies Program.." << std::endl;
-        // perform space loops.
         performSpaceBodies(bodies);
-
 
         if (loopCap > 1){
           // half the timestep for the next iteration (if there is one.)
           defaultTimeStepSize = defaultTimeStepSize / 2;
-          std::cout << "Resetting values for next iteration if needed.." << std::endl;
-          for (int i = 0; i < defaultBodyCount; i++){bodies[i].reset();}
           t = 0;
           isCollided = false;
         }
