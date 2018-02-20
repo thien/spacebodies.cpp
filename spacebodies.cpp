@@ -32,7 +32,7 @@ bool adaptiveTimeStepCheck = true; // If true, then use adaptive timestep
 bool useParaview = true; // if true, write paraview files.
 bool runParallel = true; // if set to parallel; then we run it in series.
 bool saveEveryStepToParaview = false; // if true, saves every step. otherwise it saves contingent on equal increments of time.
-double defaultTimeStepSize = 0.000000001;
+double defaultTimeStepSize = 0.00001;
 double smallSizeLimit = 1e-8; // If variables are smaller than this then it might as well be zero.
 
 int numberOfIterations = 20; // When using the collision iteration (for different timesteps)
@@ -400,7 +400,17 @@ double seed = 12321321;
     int i,j,k; //incrementer variables
     currentTimestep = defaultTimeStepSize;
     if (printBodiesInfo){printf("\n\n");}
-    if (printTimestampInfo){printf ("T: %012.10f, # Bodies: %1.0d \n", t, NumberOfBodies);}
+    if (printTimestampInfo){
+      if (printBodiesInfo){
+        // if we're printing bodies too then no point using carriage returns
+        // since C++ doesn't support multiple line manipulation
+        printf ("T: %012.10f, # Bodies: %1.0d", t, NumberOfBodies);
+      } else {
+        // inline print to save lines on the terminal
+         std::cout << "# Bodies: " << NumberOfBodies << ", Time: " << std::fixed << std::setprecision(9) << t << "\r"<< std::flush;
+      }
+    }
+
 
     // initiate positions of the shortest body positions
     double closestDistance = 999999;
