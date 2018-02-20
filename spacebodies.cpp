@@ -31,35 +31,36 @@ bool adaptiveTimeStepCheck = true; // If true, then use adaptive timestep
 bool useParaview = true; // if true, write paraview related files.
 bool runParallel = true; // if set to parallel; then we run it in series.
 
-double defaultTimeStepSize = 0.000001;
+double defaultTimeStepSize = 0.00000001;
 double smallSizeLimit = 1e-8; // If variables are smaller than this then it might as well be zero.
 
 int numberOfIterations = 20; // When using the collision iteration (for different timesteps)
-bool isCsvCollisionWrite = true; // if set to true, it will generate a csv of two bodies and data to show their collision.
+bool isCsvCollisionWrite = false; // if set to true, it will generate a csv of two bodies and data to show their collision.
 bool terminateOnCollision = false; // if set to true, terminate the program after a collision
 bool collisionIterate = false; // iterates through multiple rounds, halving the timestep size as it goes.
 bool writeTimerCount = false; //if true, saves runtime logs of every simulation
 
-bool isCsvBodyCountWrite = true; // if true, will write a csv that counts the number of bodies over time.
+bool isCsvBodyCountWrite = false; // if true, will write a csv that counts the number of bodies over time.
 
 // writer variables
 bool printBodiesInfo = false; // prints the bodies and their data
-bool printTimestampInfo = true;// print timestamp if true
+bool printTimestampInfo = false;// print timestamp if true
 
 double referenceDistance = -1.95; // If measuring error, use this value as the reference!
 
 // Tools to manage random spacebodies
 // (This is utilised by initiating spacebodies without any parameters.)
-bool RandomBodies = true;
 int NumberOfRandomBodies = 10000;
 double randomSimTFinal = 200.0;
-double fMin = -1.0; // random double min
-double fMax = 1.0; // random double max
+double fMin = -0.000001; // random double min
+double fMax = 0.000001; // random double max
 
 double seed = 12321321;
 
 // SETUP VARIABLES-------------------------------
+  // DON'T EDIT THESE..
 
+  bool RandomBodies = true;
   bool isCollided = false;
   double t = 0;
   double tFinal = 0;
@@ -77,7 +78,6 @@ double seed = 12321321;
   clock_t initEnd = clock();
   clock_t parallelEndTime = clock();
   clock_t taskEndTime = clock();  
-  
 
 // CSV WRITER HANDLERS --------------------------
 
@@ -118,15 +118,6 @@ double seed = 12321321;
         mass = 0;
       }
 
-      void capForceLimit(){
-        // If the bodies force is small enough then we set it to zero.
-        for (int k=0; k<3; k++){if (force[k] < 1e-10){force[k] = 0;}}
-      }
-
-      void printForce(){
-        printf("Force: %+020.15f, %+020.15f, %+020.15f \n", force[0],force[1],force[2]);
-      }
-
       void resetForce(){
         for (int i = 0; i < 3; i++) {force[i] = 0;}
       }
@@ -151,7 +142,7 @@ double seed = 12321321;
         << "<PolyData>" << std::endl
         << " <Piece NumberOfPoints=\"" << NumberOfBodies << "\">" << std::endl
         << "  <Points>" << std::endl
-        << "   <DataArray type=\"FloacurTS_pos_Str2\" NumberOfComponents=\"3\" format=\"ascii\">";
+        << "   <DataArray type=\"Float32\" NumberOfComponents=\"3\" format=\"ascii\">";
 
     for (int i=0; i<NumberOfBodies; i++) {
       out << bodies[i].x[0]
@@ -172,7 +163,7 @@ double seed = 12321321;
   }
 
   void openParaviewVideoFile() {
-    videoFile.open( "paraview/result.pvd" );
+    videoFile.open( "result.pvd" );
     videoFile << "<?xml version=\"1.0\"?>" << std::endl
               << "<VTKFile type=\"Collection\" version=\"0.1\" byte_order=\"LittleEndian\" compressor=\"vtkZLibDataCompressor\">" << std::endl
               << "<Collection>";
@@ -201,11 +192,15 @@ double seed = 12321321;
       str3 << currentTimestep / pos;
       std::string curTS_pos_Str = str3.str();
 
+      std::ostringstream str4;
+      str4 << NumberOfBodies;
+      std::string bodyCountStr = str4.str();
+
       // std::cout << "COLLISION @ t="<< t<<", Timestep: "<< currentTimestep << ": Error: " << pos << ", Location: " << a.x[0] << "; " << b.x[0] << ", Ratio: " << (currentTimestep/pos) <<", Steps: "<< timeStepsSinceLastPlot << ", Range: " << abs(b.x[0] - a.x[0]) << std::endl;
 
       std::cout <<currentTimestep<<"," << pos << "," << a.x[0] << "," << b.x[0] << "," << (currentTimestep/pos) <<","<< timeStepsSinceLastPlot << "," << abs(b.x[0] - a.x[0]) << std::endl;
       
-      collisionWrite(ts+ ", " + posString + ", "+curTS_pos_Str+"\n");
+      collisionWrite(ts+ ", " + posString + ", "+curTS_pos_Str+"," + bodyCountStr + "\n");
     }
   }
 
@@ -406,7 +401,7 @@ double seed = 12321321;
         for (j=0; j<i; j++) {
           if (i != j){ // make sure it doesn't interact with itself.
             // calculate distance
-            
+
             double distance = sqrt(
               (bodies[i].x[0]-bodies[j].x[0]) * (bodies[i].x[0]-bodies[j].x[0]) +
               (bodies[i].x[1]-bodies[j].x[1]) * (bodies[i].x[1]-bodies[j].x[1]) +
@@ -486,6 +481,7 @@ double seed = 12321321;
 
       return -1;
     }
+
     else if ( (argc-2)%7!=0 ) {
       std::cout << "error in arguments: each planet is given by seven entries (position, velocity, mass)" << std::endl;
       return -2;
@@ -586,8 +582,8 @@ double seed = 12321321;
       }
       // initialise the bodies values.
       for(int k = 0; k < 3; k++){
-        b[i].x[k] = round( random_value[k] * 100.0 ) / 100.0; // round position to 1dp
-        b[i].v[k] = round( random_value[k+3] * 100.0 ) / 100.0; // round velocity to 1dp
+        b[i].x[k] = random_value[k];
+        b[i].v[k] = random_value[k+3] * 100;
         b[i].force[k] = 0;
       }
       b[i].mass = fabs(random_value[6]); // make sure the mass has a positive value!
@@ -617,61 +613,80 @@ double seed = 12321321;
 
   // Initiate runtime
   int main(int argc, char** argv) {
-    // set random seed (should be different every time!)
     srand(seed);
+    int loopCap = 1;
+    int defaultBodyCount;
 
     // check for argument size
-    if (argc > 1){
-      RandomBodies = false;
-    }
-    if (RandomBodies == false){
-      if (verifyArguments(argc,argv) == 0){
-      // initiate bodies array
-      NumberOfBodies = (argc-2) / 7; // count the number of bodies.
-      Body bodies[NumberOfBodies];
-      // initial setup.
-      
-      int loopCap = 1;
-      if (isCsvCollisionWrite && collisionIterate){
-        loopCap = numberOfIterations;
-      }
+    if (argc > 1){RandomBodies = false;}
 
+    if (RandomBodies){
+      defaultBodyCount = NumberOfRandomBodies;
+    } else {
+      defaultBodyCount = (argc-2) / 7; // count the number of bodies.
+    }
+
+    std::cout << "Getting Body Count.." << std::endl;
+    // assign default body count to NumberOfBodies variable (used everywhere except main)
+    NumberOfBodies = defaultBodyCount;
+    
+    // make sure the arguments are valid prior to running.
+    if (verifyArguments(argc,argv) == 0){
+      // initiate body array
+      Body bodies[NumberOfBodies];
+    
       if (isCsvCollisionWrite){
         // write header for csv if enabled
-        collisionWrite("Timestep,");
-        collisionWrite("distance\n");
+        collisionWrite("Timestep, distance\n");
+        if (collisionIterate){loopCap = numberOfIterations;}
       }
 
-      std::cout << "Performing Space Bodies" << std::endl;
+      // print to countWriter;
       countWrite("Time, Number of Bodies\n");
-      countWrite(std::to_string(t) + "," + std::to_string(NumberOfBodies) + "\n");
+      countWrite(std::to_string(t) + "," + std::to_string(defaultBodyCount) + "\n");
       
+      // initate run.
       for (int s = 0; s < loopCap; s++){
         // reset values
-        for (int i = 0; i < NumberOfBodies; i++){bodies[i].reset();}
-        NumberOfBodies = (argc-2) / 7; // count the number of bodies.
+
+        std::cout << "Resetting values.." << std::endl;
+
+        for (int i = 0; i < defaultBodyCount; i++){bodies[i].reset();}
         t = 0;
         tFinal = 0;
         isCollided = false;
 
+        std::cout << "Defaulting values.." << std::endl;
+
         // set up values again
-        setUp(argc,argv,bodies);
+        if (RandomBodies){
+          std::cout << "Initiating Random Bodies.. ";
+          genRandomBodiesStart = clock();
+          generateRandomBodies(bodies);
+          genRandomBodiesEnd = clock();
+        } else {
+          std::cout << "Initiating argument bodies.. ";
+          setUp(argc,argv,bodies);
+        }
+        std::cout << " Done." << std::endl;
         
+        std::cout << "Initiating Paraview if needed.." << std::endl;
+
         if (useParaview){
           openParaviewVideoFile();
           printParaviewSnapshot(0, bodies);
         }
 
+        std::cout << "Starting The Space Bodies Program.." << std::endl;
         // perform space loops.
         performSpaceBodies(bodies);
+        // half the timestep for the next iteration (if there is one.)
         defaultTimeStepSize = defaultTimeStepSize / 2;
       }
 
       if (useParaview){closeParaviewVideoFile();}
-      }
-    } else {
-      runRandomBodies();
     }
+  
     // Close the files that were opened in memory.
     return 0;
   }

@@ -8,9 +8,9 @@ if [ ! -d paraview ]; then
 fi
 
 # use to calculate simulations between parallel and serial
-g++ -O3 --std=c++11 -fopenmp spacebodies.cpp -o build/spacebodies_p
-# g++ -O3 --std=c++11 spacebodies.cpp -o build/spacebodies_s
-./build/spacebodies_p
+# g++ -O3 --std=c++11 -fopenmp spacebodies.cpp -o build/spacebodies_p
+g++ -O3 --std=c++11 spacebodies.cpp -o build/spacebodies_s
+# ./build/spacebodies_p
 # ./build/spacebodies_s
 
 # compile spacebodies code (Parallel)
@@ -21,12 +21,12 @@ g++ -O3 --std=c++11 -fopenmp spacebodies.cpp -o build/spacebodies_p
 
 
 # Run random bodies
-# ./build/spacebodies
+./build/spacebodies_s
 
 # run spacebodies; note that it comes in the form of px py pz vx vy vz m
 
 # general spacebodies
-# ./build/spacebodies 1.0 2.0 1.0 3.0 4.0 1.0 2.0 0.2 \ 1.0 2.0 4.0 1.0 1.0 0.1 2.0 \ 1.0 0.1 0.1 0.1 0.1 1.0 2.0
+# ./build/spacebodies_s 1.0 2.0 1.0 3.0 4.0 1.0 2.0 0.2 \ 1.0 2.0 4.0 1.0 1.0 0.1 2.0 \ 1.0 0.1 0.1 0.1 0.1 1.0 2.0
 
 # collisions
 # ./build/spacebodies 0.002  \ 0.00001 0.0 0.0 -0.10001 0.0 0.0 5.0 \ -0.00001 0.0 0.0 0.1 0.0 0.0 5.0
