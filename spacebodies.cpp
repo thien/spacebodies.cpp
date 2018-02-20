@@ -31,8 +31,8 @@
 bool adaptiveTimeStepCheck = true; // If true, then use adaptive timestep
 bool useParaview = true; // if true, write paraview files.
 bool runParallel = true; // if set to parallel; then we run it in series.
-
-double defaultTimeStepSize = 0.0001;
+bool saveEveryStepToParaview = false; // if true, saves every step. otherwise it saves contingent on equal increments of time.
+double defaultTimeStepSize = 0.000000001;
 double smallSizeLimit = 1e-8; // If variables are smaller than this then it might as well be zero.
 
 int numberOfIterations = 20; // When using the collision iteration (for different timesteps)
@@ -53,10 +53,10 @@ double referenceDistance = -1.95; // If measuring error, use this value as the r
 // random bodies are called with the -r flag..
 // i.e ./spacebodies -r
 
-int NumberOfRandomBodies = 10000;
-double randomSimTFinal = 0.1;
-double fMin = -0.0001; // random double min
-double fMax = 0.0001; // random double max
+int NumberOfRandomBodies = 20000;
+double finalRandomSimulationTime = 0.1;
+double fMin = 0.000001; // random double min
+double fMax = 0.000002; // random double max
 bool bodiesHaveMass = false; // if false, then the bodies have negligible mass
 
 // Seed value (used to generate random values for the bodies.)
@@ -192,10 +192,10 @@ double seed = 12321321;
   }
 
   void openParaviewVideoFile() {
-    std::stringstream pvdfile;
-    pvdfile << "paraview/" << startTimeString() << "_result.pvd";
+    std::stringstream pvdFile;
+    pvdFile << "paraview/" << startTimeString() << "_result.pvd";
 
-    videoFile.open( pvdfile.str() );
+    videoFile.open( pvdFile.str() );
     videoFile << "<?xml version=\"1.0\"?>" << std::endl
               << "<VTKFile type=\"Collection\" version=\"0.1\" byte_order=\"LittleEndian\" compressor=\"vtkZLibDataCompressor\">" << std::endl
               << "\t<Collection>"
@@ -561,8 +561,14 @@ double seed = 12321321;
         break;
       }
       // update paraview files if enabled.
-      if ((timeStepsSinceLastPlot%plotEveryKthStep==0) && useParaview) {
-        printParaviewSnapshot(timeStepsSinceLastPlot/plotEveryKthStep, bodies);
+      if (useParaview){
+        if(saveEveryStepToParaview){
+          printParaviewSnapshot(timeStepsSinceLastPlot, bodies);
+        } else {
+          if (timeStepsSinceLastPlot%plotEveryKthStep==0){
+            printParaviewSnapshot(timeStepsSinceLastPlot/plotEveryKthStep, bodies);
+          }
+        }
       }
     }
     // end time is handled here.
@@ -670,7 +676,7 @@ double seed = 12321321;
           genRandomBodiesStart = clock();
           generateRandomBodies(bodies);
           genRandomBodiesEnd = clock();
-          tFinal = randomSimTFinal;
+          tFinal = finalRandomSimulationTime;
         } else {
           std::cout << "Initiating argument bodies.. ";
           setUp(argc,argv,bodies);
