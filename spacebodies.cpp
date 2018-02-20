@@ -4,7 +4,7 @@
 //
 // Run it with
 //
-// ./spaceboddies
+// ./spacebodies
 //
 // There should be a result.pvd file that you can open with Paraview.
 // Sometimes, Paraview requires to select the representation "Point Gaussian"
@@ -31,7 +31,7 @@ bool adaptiveTimeStepCheck = true; // If true, then use adaptive timestep
 bool useParaview = true; // if true, write paraview related files.
 bool runParallel = true; // if set to parallel; then we run it in series.
 
-double defaultTimeStepSize = 0.00000001;
+double defaultTimeStepSize = 0.00001;
 double smallSizeLimit = 1e-8; // If variables are smaller than this then it might as well be zero.
 
 int numberOfIterations = 20; // When using the collision iteration (for different timesteps)
@@ -44,23 +44,25 @@ bool isCsvBodyCountWrite = false; // if true, will write a csv that counts the n
 
 // writer variables
 bool printBodiesInfo = false; // prints the bodies and their data
-bool printTimestampInfo = false;// print timestamp if true
+bool printTimestampInfo = true;// print timestamp if true
 
 double referenceDistance = -1.95; // If measuring error, use this value as the reference!
 
 // Tools to manage random spacebodies
-// (This is utilised by initiating spacebodies without any parameters.)
+// random bodies are called with the -r flag..
+// i.e ./spacebodies -r
 int NumberOfRandomBodies = 10000;
 double randomSimTFinal = 200.0;
 double fMin = -0.000001; // random double min
 double fMax = 0.000001; // random double max
 
+// Seed value (used to generate random values for the bodies.)
 double seed = 12321321;
 
 // SETUP VARIABLES-------------------------------
   // DON'T EDIT THESE..
 
-  bool RandomBodies = true;
+  bool RandomBodies = false;
   bool isCollided = false;
   double t = 0;
   double tFinal = 0;
@@ -467,28 +469,6 @@ double seed = 12321321;
    taskEndTime = clock();
   }
 
-  // check if the arguments are valid
-  int verifyArguments(int argc, char** argv){
-    if (argc==1) {
-      std::cout << "please add the final time plus a list of object configurations as tuples px py pz vx vy vz m" << std::endl
-                << std::endl
-                << "Examples:" << std::endl
-                << "100.0   0 0 0 1.0   0   0 1.0 \t One body moving form the coordinate system's centre along x axis with speed 1" << std::endl
-                << "100.0   0 0 0 1.0   0   0 1.0 0 1.0 0 1.0 0   0 1.0 \t One spiralling around the other one" << std::endl
-                << "100.0 3.0 0 0   0 1.0   0 0.4 0   0 0   0 0   0 0.2 2.0 0 0 0 0 0 1.0 \t Three body setup from first lecture" << std::endl
-                << std::endl
-                << "In this naive code, only the first body moves" << std::endl;
-
-      return -1;
-    }
-
-    else if ( (argc-2)%7!=0 ) {
-      std::cout << "error in arguments: each planet is given by seven entries (position, velocity, mass)" << std::endl;
-      return -2;
-    }
-    return 0;
-  }
-
   // Saves running time
   void timeHandler(){
     clock_t tEnd = clock();
@@ -508,7 +488,6 @@ double seed = 12321321;
 
 
     if (writeTimerCount){
-
       double timeMult = 0.000001;
       double timeTaken = (tEnd - tStart) * timeMult;
 
@@ -590,25 +569,34 @@ double seed = 12321321;
     }
   }
 
-  // Runs the random bodies simulation
-  void runRandomBodies(){
-    // test with random bodies
-      NumberOfBodies = NumberOfRandomBodies;
-      tFinal = randomSimTFinal;
-      Body bodies[NumberOfBodies];
+  // check if the arguments are valid
+  int verifyArguments(int argc, char** argv){
 
-      if (useParaview){
-        openParaviewVideoFile();
-        printParaviewSnapshot(0, bodies);
+    if (argc==1) {
+      std::cout << "please add the final time plus a list of object configurations as tuples px py pz vx vy vz m" << std::endl
+                << std::endl
+                << "Examples:" << std::endl
+                << "100.0   0 0 0 1.0   0   0 1.0 \t One body moving form the coordinate system's centre along x axis with speed 1" << std::endl
+                << "100.0   0 0 0 1.0   0   0 1.0 0 1.0 0 1.0 0   0 1.0 \t One spiralling around the other one" << std::endl
+                << "100.0 3.0 0 0   0 1.0   0 0.4 0   0 0   0 0   0 0.2 2.0 0 0 0 0 0 1.0 \t Three body setup from first lecture" << std::endl
+                << std::endl;
+      return -1;
+    } else {
+      for (int i = 0; i < argc; i++){
+        // look at flags.
+        std::string arg = argv[i];
+        if (arg == "-r"){
+          std::cout << "Random Body Flag is found!" << std::endl;
+          RandomBodies = true;
+        }
       }
-      
-      genRandomBodiesStart = clock();
-      generateRandomBodies(bodies);
-      genRandomBodiesEnd = clock();
 
-      performSpaceBodies(bodies);
-
-      if (useParaview){closeParaviewVideoFile();}
+      if ( ((argc-2)%7!=0) && (RandomBodies == false)) {
+        std::cout << "error in arguments: each planet is given by seven entries (position, velocity, mass)" << std::endl;
+        return -2;
+      }
+    }
+    return 0;
   }
 
   // Initiate runtime
@@ -617,21 +605,20 @@ double seed = 12321321;
     int loopCap = 1;
     int defaultBodyCount;
 
-    // check for argument size
-    if (argc > 1){RandomBodies = false;}
-
-    if (RandomBodies){
-      defaultBodyCount = NumberOfRandomBodies;
-    } else {
-      defaultBodyCount = (argc-2) / 7; // count the number of bodies.
-    }
-
-    std::cout << "Getting Body Count.." << std::endl;
-    // assign default body count to NumberOfBodies variable (used everywhere except main)
-    NumberOfBodies = defaultBodyCount;
-    
     // make sure the arguments are valid prior to running.
+    // Also look at the arguments prior.
     if (verifyArguments(argc,argv) == 0){
+      std::cout << "Getting Body Count.. ";
+
+      if (RandomBodies){
+        defaultBodyCount = NumberOfRandomBodies;
+      } else {
+        defaultBodyCount = (argc-2)/7;
+      }
+
+      std::cout << "Done; Found " << defaultBodyCount << " bodies." << std::endl;
+      // assign default body count to NumberOfBodies variable (used everywhere except main)
+      NumberOfBodies = defaultBodyCount;
       // initiate body array
       Body bodies[NumberOfBodies];
     
@@ -647,32 +634,21 @@ double seed = 12321321;
       
       // initate run.
       for (int s = 0; s < loopCap; s++){
-        // reset values
-
-        std::cout << "Resetting values.." << std::endl;
-
-        for (int i = 0; i < defaultBodyCount; i++){bodies[i].reset();}
-        t = 0;
-        tFinal = 0;
-        isCollided = false;
-
-        std::cout << "Defaulting values.." << std::endl;
-
-        // set up values again
+        // generate bodies.
         if (RandomBodies){
           std::cout << "Initiating Random Bodies.. ";
           genRandomBodiesStart = clock();
           generateRandomBodies(bodies);
           genRandomBodiesEnd = clock();
+          tFinal = randomSimTFinal;
         } else {
           std::cout << "Initiating argument bodies.. ";
           setUp(argc,argv,bodies);
         }
         std::cout << " Done." << std::endl;
         
-        std::cout << "Initiating Paraview if needed.." << std::endl;
-
         if (useParaview){
+          std::cout << "Initiating Paraview files.." << std::endl;
           openParaviewVideoFile();
           printParaviewSnapshot(0, bodies);
         }
@@ -680,11 +656,22 @@ double seed = 12321321;
         std::cout << "Starting The Space Bodies Program.." << std::endl;
         // perform space loops.
         performSpaceBodies(bodies);
-        // half the timestep for the next iteration (if there is one.)
-        defaultTimeStepSize = defaultTimeStepSize / 2;
+
+
+        if (loopCap > 1){
+          // half the timestep for the next iteration (if there is one.)
+          defaultTimeStepSize = defaultTimeStepSize / 2;
+          std::cout << "Resetting values for next iteration if needed.." << std::endl;
+          for (int i = 0; i < defaultBodyCount; i++){bodies[i].reset();}
+          t = 0;
+          isCollided = false;
+        }
       }
 
-      if (useParaview){closeParaviewVideoFile();}
+      if (useParaview){
+        std::cout << "Closing paraview files.." << std::endl;
+        closeParaviewVideoFile();
+      }
     }
   
     // Close the files that were opened in memory.
