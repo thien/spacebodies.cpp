@@ -96,9 +96,9 @@ Derive the runtime complexity of the code and compare it to your experimental da
 
 Note: _A seed for the Random Number Generator is used to ensure that the sequences of non-repeating numbers used to generate the random bodies are consistent and repeatable, regardless of the body size._
 
-For this section, we assume that the timestep and the limit is fixed. The most dominant function, `updateBodies()`, utilises a nested loop that iterates through every body in the simulation. For each iteration, a force for a given body is calculated by comparing its position against every other body in space. This makes `updateBodies()` run in $O(\alpha \cdot n^2)$. 
+For this section, we assume that the timestep and the limit is fixed. The most dominant function, `updateBodies()`, utilises a nested loop that iterates through every body in the simulation. For each iteration, a force for a given body is calculated by comparing its position against every other body in space. This loop results in a runtime of $O(\alpha \cdot n^2)$. It also includes updating bodies, which takes $O(n)$. Collisions are handled to run in $O(\alpha \cdot n)$, which considers the event that every body could collide. Initialisations consist of having every body set up, which takes at most $O(\alpha \cdot n)$.
 
-Procedures have been taken to reduce the hidden constant $\alpha$ (We assume $\alpha=1$ prior to optimisations.); Each body only calculates its force against bodies that precede them in the order of initiation i.e. Body $2$ calculates force from Body $1$ and Body $0$ whereas Body $3$ calculates from $0,1$ and $2$. Whilst `updateBodies()` would continue to run in $O(n^2)$, the hidden constant would be drastically reduced to a factor of $\frac{1}{2}$ of the original number of calculations needed. There are also other improvements in the program that are based on trading computation time for storage space.
+Procedures have been taken to reduce the hidden constant $\alpha$ (We assume $\alpha=1$ prior to optimisations.); Each body only calculates its force against bodies that precede them in the order of initiation i.e. Body $2$ calculates force from Body $1$ and Body $0$ whereas Body $3$ calculates from $0,1$ and $2$. Whilst `updateBodies()` would continue to run in $O(n^2)$, the hidden constant would be drastically reduced to a factor of $\frac{1}{2}$ of the original number of calculations needed. There are also other improvements in the program that are based on trading computation time for storage space. Overall, the program would run at most $O(\alpha \cdot n^2)$.
 
 There are also other various optimisations are the compiler level that are not considered during the calculation. The compilation is abstracted from the user. This makes it more difficult to create a fair comparison between real data and theoretical outcomes.
 
@@ -157,7 +157,7 @@ There is a large overhead involved in terms of initiating a set of threads to be
 
 Gustafson estimated the speed-up $S$ gained by using $N$ processors (instead of just one) for a task with a serial fraction(which does not benefit from parallelism,) $K$, as $S=N+(1-N)K$. The table below shows the time measurements between serial and parallel times, measured via the CPU time. From here, we can deduce K by looking at the time spent on serial operations as a fraction of the overall time.
 
-| Number of Bodies | Threads | Serial Time | Parallel Time | Total Time | K | 
+| Number of Bodies | Threads $(p)$ | Serial Time | Parallel Time | Total Time $t(p)$ | K | 
 |------------------+---------+-------------+---------------+------------+---|
 | 20000 | 1 | 0.026708 | 35.1801 | 35.206808 | 0.0007044473923 | 
 | 20000 | 2 | 0.028066 | 17.64145 | 17.669516 | 0.0007420183465 | 
@@ -176,12 +176,27 @@ Gustafson estimated the speed-up $S$ gained by using $N$ processors (instead of 
 | 50000 | 7 | 0.049742 | 55.82085714 | 55.87059914 | 0.000146939975 | 
 | 50000 | 8 | 0.056105 | 54.79475 | 54.850855 | 0.0001151510654 |
 
-As the processor in question includes hyper-threading, it may obfuscate the results in some manner. The program depends on its floating point operations. The use of hyper-threading provides the illusion of 8 threads, whereas in reality, floating point registers are shared between a virtual thread and a physical core, reducing the effectiveness of the extra threads. This is shown in the table above, where diminishing returns can be seen from 4 threads onwards. This is also visualised in Figure 3. Therefore, we treat the rest of Gustafson's formula using 4 threads; each representing a physical core.
+As the processor in question includes hyper-threading, it may obfuscate the results in some manner. The program depends on its floating point operations. The use of hyper-threading provides the illusion of 8 threads, whereas in reality, floating point registers are shared between a virtual thread and a physical core, reducing the effectiveness of the extra threads. This is shown in the table above, where diminishing returns can be seen from 4 threads onwards. This is also visualised in Figure 3. For the calculations, we ignore any $p>4$.
 
 ![Red represents 50,000 body operations, and blue represents 20,000 bodies.](20k-50k.png)
 
-For 50,000 bodies, $K=0.0002255879951$ is chosen from the 1 thread operation. This Results in S being $4 + (1-4) \times 0.000225.. = 4.000675$. This law is respected when we compare the speed-up from 4 threads against 1 thread, where the speed-up is 3.77x. ('8 Threads' provides a speed-up of 4.0097x which is within margin of error). This goes in hand with our scaling plot where we can see a 3.7x increase between parallel and serial simulations in the scaling experiments.
+We use the formula $t(1) = f \cdot t(p) + (1-f) \cdot t(p) \cdot p$, where $f$ represents the ratio of the serial fraction, and $p$ represents the number of threads utilised. $t(p)$ represents the time utilised given $p$ threads. To calculate $f$, our problem sizes will need to be fixed. I use both 50,000 and 20,000 bodies as separate calculations. The large body sizes are used to overcome parallel overheads involved. Using $p$ as 4 and 2, we use a simple simultaneous equation $f \cdot (t(4)) + (1-f) \cdot t(4) \cdot 4 = f \cdot (t(2)) + (1-f) \cdot t(2) \cdot 2$.
 
+For 50,000 bodies, $f = 0.1767$ and for 20,000 bodies, $f = 0.2012$.
+
+This presents a speedup of $s = 3.47$ for 50,000 bodies on 4 threads, and $s=3.396$ for 20,000 bodies on 4 threads. Gustafson's law neglects some concurrency overhead, however which may explain the difference between the speedup calculated here and what the results show. Using Amdahl's law shows $s=3.76$ for 20k bodies on 4 threads, and $s=3.78$ for 50k bodies.
+
+<!-- $t(1) = f\cdot(t(4)) + (1-f) \cdot t(4) \cdot 4 = f \cdot (t(2)) + (1-f) \cdot t(2) \cdot 2 $
+
+$174.590994f + 232.787992 = 110.752413f + 221.504826$
+$-63.83858f = -11.283172$ 
+$f = 0.17674534740591036$
+-->
+
+
+<!-- For 20,000 bodies, The same procedure applies. -->
+
+<!-- $f = 0.20121274771943057$ -->
 <!-- It depends on whether you fix the problem size.
 It hence depends on your purpose.
 It is crucial to clarify assumptions a priori.
