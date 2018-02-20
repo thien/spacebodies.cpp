@@ -1,10 +1,16 @@
 // Translate this file with
 //
 // g++ -O3 --std=c++11 spacebodies.cpp -o spacebodies
+// or in parallel
+// g++ -O3 --std=c++11 -fopenmp spacebodies.cpp -o spacebodies
 //
 // Run it with
 //
 // ./spacebodies
+// 
+// if you're planning to utilise the random bodies options (configure below)
+// 
+// ./spacebodies -r
 //
 // There should be a result.pvd file that you can open with Paraview.
 // Sometimes, Paraview requires to select the representation "Point Gaussian"
