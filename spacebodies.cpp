@@ -17,7 +17,6 @@
 #include <cstdlib>
 #include <iostream>
 #include <ctime>
-
 #include <string>
 #include <math.h>
 #include <unordered_map>
@@ -29,9 +28,12 @@
 // CONFIGURATION OPTIONS
 
 bool adaptiveTimeStepCheck = true; // If true, then use adaptive timestep
+
+// If you're using paraview,
+// make sure that there is a 'paraview' folder in the same directory as this file!
 bool useParaview = true; // if true, write paraview files.
-bool runParallel = true; // if set to parallel; then we run it in series.
 bool saveEveryStepToParaview = false; // if true, saves every step. otherwise it saves contingent on equal increments of time.
+
 double defaultTimeStepSize = 0.00001;
 double smallSizeLimit = 1e-8; // If variables are smaller than this then it might as well be zero.
 
@@ -53,14 +55,21 @@ double referenceDistance = -1.95; // If measuring error, use this value as the r
 // random bodies are called with the -r flag..
 // i.e ./spacebodies -r
 
-int NumberOfRandomBodies = 20000;
-double finalRandomSimulationTime = 0.1;
-double fMin = 0.000001; // random double min
-double fMax = 0.000002; // random double max
-bool bodiesHaveMass = false; // if false, then the bodies have negligible mass
+int NumberOfRandomBodies = 100;
+double finalRandomSimulationTime = 10.0;
+double fMin = 1; // random double min
+double fMax = 2; // random double max
+bool bodiesHaveMass = true; // if false, then the bodies have negligible mass
 
 // Seed value (used to generate random values for the bodies.)
 double seed = 12321321;
+
+
+
+
+
+
+
 
 // SETUP VARIABLES-------------------------------
   // DON'T EDIT THESE..
@@ -386,7 +395,7 @@ double seed = 12321321;
             // break the loop, we have a perfect score.
             badDistanceRatio = false;
           } else {
-            // we want the new distance to be around 1/3 to 1/2 of the distance they will cover.
+            // we want the new distance to be around 1/5 of the distance they will cover.
             badDistanceRatio = (((newDist-currentDistance) / currentDistance) < 0.2);
           }
         }
@@ -404,7 +413,7 @@ double seed = 12321321;
       if (printBodiesInfo){
         // if we're printing bodies too then no point using carriage returns
         // since C++ doesn't support multiple line manipulation
-        printf ("T: %012.10f, # Bodies: %1.0d", t, NumberOfBodies);
+        printf ("T: %012.10f, # Bodies: %1.0d \n", t, NumberOfBodies);
       } else {
         // inline print to save lines on the terminal
          std::cout << "# Bodies: " << NumberOfBodies << ", Time: " << std::fixed << std::setprecision(9) << t << "\r"<< std::flush;
